@@ -1,0 +1,17 @@
+{
+  "name": "infigen-software-marketplace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "InfiGen software and digital products marketplace storefront",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test:smoke": "node smoke-test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
