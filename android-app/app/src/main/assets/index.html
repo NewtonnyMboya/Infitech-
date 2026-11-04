@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101c35"><title>Infinity Money Transfer</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f5f9;color:#18243a;font:16px Arial,sans-serif}
+header{background:#101c35;color:white;padding:22px 18px}header h1{margin:0;font-size:21px}
+main{max-width:720px;margin:auto;padding:16px}.card{background:white;border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 3px 16px #172b4d12}
+.muted{color:#64748b;font-size:13px}.balance{font-size:30px;font-weight:700;margin:8px 0}
+label{display:block;font-size:13px;margin:13px 0 6px}input,select{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px}
+button{width:100%;padding:14px;border:0;border-radius:10px;background:#172f55;color:white;font-weight:700;font-size:15px;margin-top:14px}
+button.secondary{background:#e8edf5;color:#172f55}.notice{background:#fff7df;border:1px solid #f2d68b;padding:12px;border-radius:10px;font-size:13px;line-height:1.5}
+</style></head><body>
+<header><h1>◈ INFINITY MONEY TRANSFER</h1><div style="color:#cbd5e1;margin-top:6px">Your transfer workspace</div></header>
+<main>
+<div class="card"><div class="muted">DEMO WALLET BALANCE</div><div class="balance" id="balance">KSh 1,000,000.00</div><div class="muted">Simulated funds only · Not withdrawable or spendable</div></div>
+<div class="notice"><b>Demo mode is active.</b> This is fictional test data. No real funds are held, and demo transfers do not send money.</div>
+<div class="card"><h3>Send money using Skrill</h3>
+<label for="email">Recipient Skrill email</label><input id="email" type="email" placeholder="recipient@example.com">
+<label for="amount">Amount (KES)</label><input id="amount" type="number" min="1" step="1" placeholder="10000">
+<label for="mode">Transfer mode</label><select id="mode"><option value="demo">Demo simulation</option><option value="live">Live integration (backend required)</option></select>
+<button onclick="transfer()">Continue</button><button class="secondary" onclick="window.open('https://www.skrill.com/','_blank','noopener')">Open official Skrill website</button>
+<div id="message" class="muted" style="margin-top:12px" aria-live="polite"></div></div>
+<div class="card"><h3>Recent activity</h3><ul id="history"><li class="muted">No transactions yet</li></ul></div>
+<div class="card"><h3>Live payments</h3><p class="muted">Live payments are disabled until a verified Skrill merchant backend is configured. No live payment is initiated by this starter app.</p></div>
+</main>
+<script>
+let balance=1000000;const tx=[];const money=n=>'KSh '+Number(n).toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2});
+function transfer(){const email=document.getElementById('email').value.trim(),amount=Number(document.getElementById('amount').value),mode=document.getElementById('mode').value,msg=document.getElementById('message');
+if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){msg.textContent='Enter a valid recipient email address.';return;}
+if(!Number.isFinite(amount)||amount<=0||!Number.isInteger(amount)){msg.textContent='Enter a positive whole-number KES amount.';return;}
+if(amount>balance){msg.textContent='Insufficient demo balance.';return;}
+if(mode==='live'){msg.textContent='Live transfers are not configured. No payment was initiated.';return;}
+balance-=amount;document.getElementById('balance').textContent=money(balance);tx.unshift({email,amount,date:new Date().toLocaleString()});
+const list=document.getElementById('history');list.innerHTML='';tx.forEach(t=>{const li=document.createElement('li');li.textContent='Demo transfer · '+money(t.amount)+' · '+t.email+' · '+t.date;list.appendChild(li);});
+msg.textContent='Demo transaction recorded locally. No money was sent to Skrill.';}
+</script></body></html>
