@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101c35"><title>Infinity Money Transfer</title>
+<style>
+:root{color-scheme:light;--bg:#f3f6fb;--surface:#fff;--surface2:#edf2fa;--text:#17243b;--muted:#68778f;--line:#dce4ef;--brand:#17345f;--brand2:#315f9f;--accent:#67d5c2;--shadow:0 8px 28px #172b4d12;--warning:#fff7df;--warning-line:#efd58e}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0b1220;--surface:#131e30;--surface2:#1b2a40;--text:#edf4ff;--muted:#a8b6ca;--line:#2b3b52;--brand:#a9caff;--brand2:#7da9e9;--accent:#72e1ce;--shadow:0 8px 28px #0005;--warning:#3a3019;--warning-line:#705b2b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px system-ui,-apple-system,Segoe UI,Arial,sans-serif;transition:background .2s,color .2s}
+button,input,select{font:inherit}button{cursor:pointer}
+.topbar{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:12px 16px;box-shadow:0 2px 12px #00000008}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}.brand-mark{width:42px;height:42px;flex:none}.brand-name{font-weight:800;letter-spacing:.02em;font-size:15px}.brand-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.icon-btn{width:42px;height:42px;border:1px solid var(--line);border-radius:12px;background:var(--surface2);color:var(--text);display:grid;place-items:center;font-size:21px}
+.topbar-spacer{flex:1}.menu-panel{display:none;position:sticky;top:67px;z-index:15;background:var(--surface);border-bottom:1px solid var(--line);padding:12px 16px;box-shadow:var(--shadow)}.menu-panel.open{display:block}
+.menu-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.menu-links button{margin:0;text-align:left;background:var(--surface2);color:var(--text);border:1px solid var(--line);padding:12px;border-radius:11px;font-weight:650}
+main{max-width:760px;margin:auto;padding:16px}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 2px 10px}.section-head h2{font-size:17px;margin:0}.collapse-btn{border:0;background:transparent;color:var(--brand2);font-weight:700;padding:8px}
+.dashboard-content.collapsed{display:none}.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{background:var(--surface);border:1px solid var(--line);border-radius:17px;padding:17px;margin:12px 0;box-shadow:var(--shadow)}.stat-label{font-size:11px;letter-spacing:.09em;color:var(--muted);font-weight:750}.balance{font-size:clamp(25px,7vw,34px);font-weight:800;margin:7px 0;letter-spacing:-.03em}.muted{color:var(--muted);font-size:13px;line-height:1.5}.stat-value{font-size:19px;font-weight:750;margin-top:7px}
+.notice{background:var(--warning);border:1px solid var(--warning-line);padding:13px;border-radius:13px;font-size:13px;line-height:1.5;margin:14px 0}
+h3{font-size:17px;margin:0 0 12px}label{display:block;font-size:13px;font-weight:650;margin:14px 0 6px}input,select{width:100%;padding:13px;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--text);font-size:16px;outline:none}input:focus,select:focus{border-color:var(--brand2);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand2) 18%,transparent)}
+.btn{width:100%;padding:14px;border:0;border-radius:11px;background:var(--brand);color:white;font-weight:750;font-size:15px;margin-top:14px}.btn.secondary{background:var(--surface2);color:var(--text);border:1px solid var(--line)}
+.action-row{display:flex;gap:10px;align-items:center}.action-row .btn{flex:1}.setting-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 0;border-bottom:1px solid var(--line)}.setting-row:last-child{border-bottom:0}.setting-title{font-weight:700}.theme-switch{display:flex;gap:5px;background:var(--surface2);border:1px solid var(--line);padding:4px;border-radius:12px}.theme-switch button{border:0;background:transparent;color:var(--muted);padding:8px 10px;border-radius:8px;font-size:13px;font-weight:700}.theme-switch button.active{background:var(--brand);color:white}
+#history{padding-left:20px;margin-bottom:0}#history li{margin:9px 0;font-size:13px;overflow-wrap:anywhere}.hidden{display:none!important}.status{min-height:20px;margin-top:12px}.footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}
+@media(max-width:420px){main{padding:12px}.card{padding:15px}.menu-links{grid-template-columns:1fr}.brand-name{font-size:13px}}
+</style>
+</head>
+<body>
+<header class="topbar">
+<button class="icon-btn" id="menuToggle" aria-label="Open navigation menu" aria-expanded="false">☰</button>
+<div class="brand">
+<svg class="brand-mark" viewBox="0 0 100 100" role="img" aria-label="Infinity Money Transfer logo"><defs><linearGradient id="ig" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#67d5c2"/><stop offset="1" stop-color="#477bd0"/></linearGradient></defs><rect x="2" y="2" width="96" height="96" rx="27" fill="#101c35"/><path d="M18 50c9-17 22-24 33-9l16 18c8 9 17 3 19-9 2-12-8-21-18-16-8 4-17 19-25 28-9 10-20 9-27-1-3-4-3-7 2-11Z" fill="none" stroke="url(#ig)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 50c9-17 22-24 33-9" fill="none" stroke="#eafcff" stroke-width="3" stroke-linecap="round"/></svg>
+<div><div class="brand-name">INFINITY MONEY TRANSFER</div><div class="brand-sub">Your transfer workspace</div></div>
+</div><div class="topbar-spacer"></div>
+<button class="icon-btn" id="quickTheme" aria-label="Toggle light and dark theme">☼</button>
+</header>
+<nav class="menu-panel" id="menuPanel" aria-label="Home dashboard menu">
+<div class="menu-links">
+<button data-target="dashboard">⌂ &nbsp; Home dashboard</button><button data-target="transferCard">⇄ &nbsp; Send money</button><button data-target="activityCard">◷ &nbsp; Recent activity</button><button data-target="settingsCard">⚙ &nbsp; Settings</button>
+</div>
+</nav>
+<main>
+<section id="dashboard">
+<div class="section-head"><h2>Home dashboard</h2><button class="collapse-btn" id="dashboardToggle" aria-expanded="true">Collapse −</button></div>
+<div class="dashboard-content" id="dashboardContent">
+<div class="stats">
+<div class="card"><div class="stat-label">DEMO WALLET BALANCE</div><div class="balance" id="balance">KSh 1,000,000.00</div><div class="muted">Simulated funds only</div></div>
+<div class="card"><div class="stat-label">TRANSFER MODE</div><div class="stat-value">Demo</div><div class="muted">Live payments not enabled</div></div>
+</div>
+<div class="notice"><b>Demo mode is active.</b> This is fictional test data. No real funds are held, and demo transfers do not send money.</div>
+<div class="card"><h3>Quick menu</h3><div class="menu-links"><button data-target="transferCard">⇄ &nbsp; Make a transfer</button><button data-target="activityCard">◷ &nbsp; View activity</button><button data-target="settingsCard">⚙ &nbsp; App settings</button><button id="dashboardTheme">☼ &nbsp; Change appearance</button></div></div>
+</div>
+</section>
+<section class="card" id="transferCard"><h3>Send money using Skrill</h3>
+<label for="email">Recipient Skrill email</label><input id="email" type="email" autocomplete="email" placeholder="recipient@example.com">
+<label for="amount">Amount (KES)</label><input id="amount" type="number" min="1" step="1" inputmode="numeric" placeholder="10000">
+<label for="mode">Transfer mode</label><select id="mode"><option value="demo">Demo simulation</option><option value="live">Live integration (backend required)</option></select>
+<button class="btn" id="transferButton">Continue</button><button class="btn secondary" id="skrillButton">Open official Skrill website</button>
+<div id="message" class="muted status" aria-live="polite"></div></section>
+<section class="card" id="activityCard"><h3>Recent activity</h3><ul id="history"><li class="muted">No transactions yet</li></ul></section>
+<section class="card" id="settingsCard"><h3>⚙ Settings</h3>
+<div class="setting-row"><div><div class="setting-title">Appearance</div><div class="muted">Choose light or dark display mode</div></div><div class="theme-switch" role="group" aria-label="Theme mode"><button id="lightTheme" class="active" aria-pressed="true">☀ Light</button><button id="darkTheme" aria-pressed="false">☾ Dark</button></div></div>
+<div class="setting-row"><div><div class="setting-title">Default transfer mode</div><div class="muted">Demo mode is for testing only</div></div><span class="muted">Demo</span></div>
+<div class="setting-row"><div><div class="setting-title">Skrill provider</div><div class="muted">Open Skrill's official website</div></div><button class="btn secondary" id="settingsSkrill" style="width:auto;margin:0;padding:9px 12px">Open</button></div>
+<div class="muted" style="margin-top:12px">Theme preference is saved on this device. Live payments remain disabled until a secure, verified merchant backend is configured.</div>
+</section>
+<section class="card"><h3>Live payments</h3><p class="muted">Live payments are disabled until a verified Skrill merchant backend is configured. No live payment is initiated by this starter app.</p></section>
+<div class="footer">∞ &nbsp; INFINITY MONEY TRANSFER</div>
+</main>
+<script>
+let balance=1000000;const tx=[];const money=n=>'KSh '+Number(n).toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2});
+function setTheme(mode){const theme=mode==='dark'?'dark':'light';document.documentElement.dataset.theme=theme;document.querySelector('meta[name="theme-color"]').content=theme==='dark'?'#0b1220':'#f3f6fb';document.getElementById('lightTheme').classList.toggle('active',theme==='light');document.getElementById('darkTheme').classList.toggle('active',theme==='dark');document.getElementById('lightTheme').setAttribute('aria-pressed',String(theme==='light'));document.getElementById('darkTheme').setAttribute('aria-pressed',String(theme==='dark'));document.getElementById('quickTheme').textContent=theme==='dark'?'☾':'☼';try{localStorage.setItem('infinity-theme',theme)}catch(e){}}
+let savedTheme='light';try{savedTheme=localStorage.getItem('infinity-theme')||'light'}catch(e){}setTheme(savedTheme);
+function toggleTheme(){setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark')}
+document.getElementById('lightTheme').addEventListener('click',()=>setTheme('light'));document.getElementById('darkTheme').addEventListener('click',()=>setTheme('dark'));document.getElementById('quickTheme').addEventListener('click',toggleTheme);document.getElementById('dashboardTheme').addEventListener('click',toggleTheme);
+const menu=document.getElementById('menuPanel'),menuToggle=document.getElementById('menuToggle');menuToggle.addEventListener('click',()=>{const open=menu.classList.toggle('open');menuToggle.setAttribute('aria-expanded',String(open));menuToggle.textContent=open?'×':'☰'});
+document.querySelectorAll('[data-target]').forEach(b=>b.addEventListener('click',()=>{const el=document.getElementById(b.dataset.target);if(el){el.scrollIntoView({behavior:'smooth',block:'start'});menu.classList.remove('open');menuToggle.setAttribute('aria-expanded','false');menuToggle.textContent='☰'}}));
+const dashboardContent=document.getElementById('dashboardContent'),dashboardToggle=document.getElementById('dashboardToggle');dashboardToggle.addEventListener('click',()=>{const collapsed=dashboardContent.classList.toggle('collapsed');dashboardToggle.textContent=collapsed?'Expand +':'Collapse −';dashboardToggle.setAttribute('aria-expanded',String(!collapsed))});
+function openSkrill(){window.open('https://www.skrill.com/','_blank','noopener')}
+document.getElementById('skrillButton').addEventListener('click',openSkrill);document.getElementById('settingsSkrill').addEventListener('click',openSkrill);
+document.getElementById('transferButton').addEventListener('click',transfer);
+function transfer(){const email=document.getElementById('email').value.trim(),amount=Number(document.getElementById('amount').value),mode=document.getElementById('mode').value,msg=document.getElementById('message');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){msg.textContent='Enter a valid recipient email address.';return;}if(!Number.isFinite(amount)||amount<=0||!Number.isInteger(amount)){msg.textContent='Enter a positive whole-number KES amount.';return;}if(amount>balance){msg.textContent='Insufficient demo balance.';return;}if(mode==='live'){msg.textContent='Live transfers are not configured. No payment was initiated.';return;}balance-=amount;document.getElementById('balance').textContent=money(balance);tx.unshift({email,amount,date:new Date().toLocaleString()});const list=document.getElementById('history');list.innerHTML='';tx.forEach(t=>{const li=document.createElement('li');li.textContent='Demo transfer · '+money(t.amount)+' · '+t.email+' · '+t.date;list.appendChild(li)});msg.textContent='Demo transaction recorded locally. No money was sent to Skrill.';}
+</script>
+</body></html>
