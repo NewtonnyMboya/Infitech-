@@ -1,0 +1,27 @@
+name: Infinity Money Transfer Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, add-infinity-money-transfer-android ]
+    paths:
+      - 'android-app/**'
+      - '.github/workflows/infinity-money-transfer-android.yml'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build debug APK
+        run: gradle assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: infinity-money-transfer-debug-apk
+          path: android-app/app/build/outputs/apk/debug/app-debug.apk
