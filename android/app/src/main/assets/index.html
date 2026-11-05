@@ -21,9 +21,11 @@ button.secondary{background:#e7eefb;color:#15346b}button:disabled{background:#9a
 input[type=number],input[type=text]{width:100%;padding:12px;border:1px solid #cbd7eb;border-radius:9px;margin-top:8px;font:inherit}
 .action{margin-top:12px;padding-top:12px;border-top:1px solid #edf1f8}.status{font-size:13px;margin-top:10px;line-height:1.5}.transaction{font-size:12px;padding:9px 0;border-bottom:1px solid #edf1f8;overflow-wrap:anywhere}
 footer{text-align:center;padding:22px;color:#64748b;font-size:12px}
+
+.homebar{display:flex;gap:10px;align-items:center;margin:14px 0}.homebtn{width:auto;margin:0;padding:11px 16px}.menuwrap{position:relative}.menupanel{display:none;position:absolute;z-index:30;top:48px;left:0;width:min(290px,85vw);max-height:70vh;overflow:auto;background:#fff;border:1px solid #cbd7eb;border-radius:14px;box-shadow:0 12px 35px #071a5230;padding:8px}.menupanel.open{display:block}.menupanel a{display:block;padding:12px;color:#15346b;text-decoration:none;border-radius:9px;font-weight:650}.menupanel a:hover{background:#eef5ff}.secure-note{font-size:12px;line-height:1.5;color:#475569}.print-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.print-actions button{margin-top:8px}.security-state{padding:11px;border-radius:10px;background:#eef5ff;border:1px solid #cbdcf7;font-size:13px;line-height:1.5}
 </style></head><body>
 <header><div class="brand"><div class="mark">∞</div><div>InfiGen<br><small>Bank • Transact • Grow</small></div></div></header>
-<main class="wrap">
+<main class="wrap" id="overview"><div class="homebar"><div class="menuwrap"><button class="homebtn" id="homeMenuButton" aria-expanded="false" aria-controls="homeMenu">⌂ Home ▾</button><nav class="menupanel" id="homeMenu" aria-label="Application menu"><a href="#overview" onclick="closeHomeMenu()">⌂ Overview</a><a href="#demo-actions" onclick="closeHomeMenu()">⇄ Transactions</a><a href="#activity" onclick="closeHomeMenu()">▤ Transaction history</a><a href="#statements" onclick="closeHomeMenu()">▧ Receipts & statements</a><a href="#live-readiness" onclick="closeHomeMenu()">◎ Live account readiness</a><a href="#channels" onclick="closeHomeMenu()">⇧ Payment channels</a><a href="#security" onclick="closeHomeMenu()">⬡ Security & audit logs</a></nav></div><small>Navigate InfiGen</small></div>
 <div class="notice"><b>Development preview</b><br>Demo mode uses simulated, on-device transactions only. No real money moves and no real account is created. Live banking remains reserved and unavailable until authorized providers, secure backend services, compliance checks and production approval are completed. Do not enter real identity or banking details.</div>
 <section class="mode">
 <h2>Choose application mode</h2>
@@ -43,27 +45,28 @@ footer{text-align:center;padding:22px;color:#64748b;font-size:12px}
 <div class="tile"><span>⇄</span><b>Transfer money</b><small>Demo simulation</small></div>
 <div class="tile"><span>▤</span><b>Statements</b><small>Demo transaction log</small></div>
 </div>
-<section class="panel demo-state"><h2>Try demo transactions</h2>
+<section class="panel demo-state" id="demo-actions"><h2>Try demo transactions</h2>
 <div class="action"><b>Deposit (simulated)</b><input id="depositAmount" type="number" min="1" step="1" placeholder="Amount in KSh"><button onclick="demoTransaction('deposit')">Add demo funds</button></div>
 <div class="action"><b>Withdraw (simulated)</b><input id="withdrawAmount" type="number" min="1" step="1" placeholder="Amount in KSh"><button class="secondary" onclick="demoTransaction('withdraw')">Withdraw demo funds</button></div>
 <div class="action"><b>Transfer (simulated)</b><input id="recipient" type="text" maxlength="40" placeholder="Demo recipient name or reference"><input id="transferAmount" type="number" min="1" step="1" placeholder="Amount in KSh"><button class="secondary" onclick="demoTransaction('transfer')">Send demo transfer</button></div>
 <div id="demoStatus" class="status" aria-live="polite">Demo transactions do not contact banks, M-PESA, Airtel Money or any external service.</div>
 </section>
-<section class="panel"><h2>Recent demo activity</h2><div id="transactions"><div class="transaction">No demo transactions yet.</div></div></section>
-<section class="panel"><h2>Live account readiness</h2>
+<section class="panel" id="activity"><h2>Recent demo activity</h2><div id="transactions"><div class="transaction">No demo transactions yet.</div></div></section>
+<section class="panel" id="live-readiness"><h2>Live account readiness</h2>
 <div class="row"><span>National ID verification</span><b>Authorized provider required</b></div>
 <div class="row"><span>Verified email and mobile</span><b>Secure backend required</b></div>
 <div class="row"><span>Unique account number</span><b>Server-side issuance required</b></div>
 <div class="row"><span>Activation threshold</span><b>KSh 500 · pending live rules</b></div>
 <div class="row"><span>Deposit ceiling</span><b>Provider / legal limits apply</b></div>
 </section>
-<section class="panel"><h2>Live payment channels · reserved</h2>
+<section class="panel" id="channels"><h2>Live payment channels · reserved</h2>
 <div class="row"><span>M-PESA / Safaricom</span><b>Authorized Daraja setup</b></div>
 <div class="row"><span>Airtel Money</span><b>Partner API required</b></div>
 <div class="row"><span>Kenyan banks</span><b>Banking partner required</b></div>
 <div class="row"><span>Other licensed providers</span><b>Contract and API required</b></div>
 </section>
-</main><footer>InfiGen · Powered by Infinity Cyber Technologies<br>Live services remain disabled until authorized integration and compliance approval.</footer>
+<section class="panel" id="statements"><h2>Receipts & statements</h2><p class="secure-note">Print-ready demo documents reflect only simulated transactions in this app session. They are not bank-issued statements.</p><div class="print-actions"><button onclick="printLatestReceipt()">Print latest receipt</button><button class="secondary" onclick="printStatement()">Print statement</button></div><div id="printStatus" class="status" aria-live="polite">No receipt has been printed yet.</div></section>
+<section class="panel" id="security"><h2>Security & anonymous audit</h2><div id="securityState" class="security-state" role="status">Defensive monitoring active. No external scanning or intrusion attempts are performed.</div><div class="row"><span>Audit records</span><b id="auditCount">0</b></div><div class="row"><span>Last integrity hash</span><b id="lastHash">Pending</b></div><div class="row"><span>Detection assessment</span><b id="detectionAssessment">No findings</b></div><div class="row"><span>Application state</span><b id="appSecurityMode">Active</b></div><button class="secondary" onclick="exportAuditLog()">Export anonymous audit log</button><button class="secondary" onclick="resumeAfterReview()">Resume after security review</button><p class="secure-note">Records use UTC timestamps and SHA-256 hash chaining where Web Crypto is available. Missing timestamps are integrity anomalies. Client-side logs are not tamper-proof; production evidence requires trusted server-side storage and key management. Anonymous means personal identifiers are excluded from these audit records; hosting infrastructure may still process network metadata.</p></section></main><footer>InfiGen · Powered by Infinity Cyber Technologies<br>Live services remain disabled until authorized integration and compliance approval.</footer>
 <script>
 (function(){
  let balance=10000;const history=[];
@@ -84,5 +87,28 @@ footer{text-align:center;padding:22px;color:#64748b;font-size:12px}
  };
  document.getElementById('liveMode').addEventListener('change',function(){document.getElementById('demoStatus').textContent='Live mode is reserved. No live banking actions are available.';});
  render();
+})();
+
+(function(){
+ const audit=[],invalidAttempts=[];let previousHash="GENESIS",hibernating=false;
+ const $=id=>document.getElementById(id),utc=()=>new Date().toISOString();
+ async function sha256(s){if(!crypto?.subtle)return "UNAVAILABLE";const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,"0")).join("");}
+ async function log(kind,assessment,detail){const now=Date.now(),valid=Number.isFinite(now)&&now>0;const r={timestamp:valid?utc():null,timestamp_ms:valid?now:0,kind,assessment:valid?assessment:"NEGATIVE_TIMESTAMP_INTEGRITY",detail:String(detail||"").slice(0,140),anonymous:true,previous_hash:previousHash};r.hash=await sha256(JSON.stringify(r));previousHash=r.hash;audit.push(r);$("auditCount").textContent=audit.length;$("lastHash").textContent=r.hash==="UNAVAILABLE"?"Web Crypto unavailable":r.hash.slice(0,20)+"…";$("detectionAssessment").textContent=r.assessment;if(r.assessment.startsWith("NEGATIVE"))$("securityState").textContent="A negative integrity/security finding was recorded. Review the audit trail.";return r;}
+ window.closeHomeMenu=()=>{$("homeMenu").classList.remove("open");$("homeMenuButton").setAttribute("aria-expanded","false");};
+ $("homeMenuButton").addEventListener("click",()=>{const v=$("homeMenu").classList.toggle("open");$("homeMenuButton").setAttribute("aria-expanded",String(v));});
+ document.addEventListener("click",e=>{if(!e.target.closest(".menuwrap"))closeHomeMenu();});
+ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+ const fmt=n=>"KSh "+Number(n).toLocaleString("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2});
+ function printDoc(title,body){const w=window.open("","_blank");if(!w){$("printStatus").textContent="Print window blocked. Allow pop-ups and try again.";return false;}w.document.write("<!doctype html><html><head><title>"+title+"</title><meta name='viewport' content='width=device-width,initial-scale=1'><style>body{font:14px Arial;padding:24px;color:#111}h1{font-size:22px}table{width:100%;border-collapse:collapse}td,th{padding:9px;border-bottom:1px solid #ccc;text-align:left}.muted{font-size:12px;color:#555}</style></head><body>"+body+"<p class='muted'>InfiGen DEMO DOCUMENT · Not a bank-issued document · "+utc()+"</p><script>window.onload=()=>window.print();<\/script></body></html>");w.document.close();return true;}
+ function rows(){return Array.from(document.querySelectorAll("#transactions .transaction")).filter(x=>!x.textContent.includes("No demo transactions")).map(el=>{const t=el.innerText.split("\n"),m=t[0].match(/KSh\s*([\d,.]+)/);return {type:t[0].split(" · ")[0],amount:m?Number(m[1].replace(/,/g,"")):0,ref:(t[1]||"").split(" · ")[0],time:(t[1]||"").split(" · ").slice(1).join(" · ")};});}
+ window.printLatestReceipt=()=>{const r=rows()[0];if(!r){$("printStatus").textContent="No demo transaction is available to print.";return;}if(printDoc("InfiGen demo receipt","<h1>InfiGen — Transaction receipt</h1><p><b>Reference:</b> "+esc(r.ref)+"</p><p><b>Type:</b> "+esc(r.type)+"</p><p><b>Amount:</b> "+fmt(r.amount)+"</p><p><b>Recorded:</b> "+esc(r.time)+"</p><p><b>Status:</b> SIMULATED — NO MONEY MOVED</p>")){$("printStatus").textContent="Receipt prepared for browser/device printing.";log("RECEIPT_PRINT","POSITIVE","Demo receipt print requested");}};
+ window.printStatement=()=>{const rs=rows(),tr=rs.map(r=>"<tr><td>"+esc(r.ref)+"</td><td>"+esc(r.type)+"</td><td>"+fmt(r.amount)+"</td><td>"+esc(r.time)+"</td></tr>").join("");if(printDoc("InfiGen demo statement","<h1>InfiGen — Demo statement</h1><p>Opening demo balance: KSh 10,000.00</p><table><thead><tr><th>Reference</th><th>Type</th><th>Amount</th><th>Time</th></tr></thead><tbody>"+(tr||"<tr><td colspan='4'>No transactions recorded</td></tr>")+"</tbody></table><p><b>Current demo balance:</b> "+esc($("balance").textContent)+"</p><p>All entries are simulated.</p>")){$("printStatus").textContent="Statement prepared for browser/device printing.";log("STATEMENT_PRINT","POSITIVE","Demo statement print requested");}};
+ window.exportAuditLog=()=>{const blob=new Blob([JSON.stringify({format:"InfiGen anonymous defensive audit v1",exported_at:utc(),records:audit},null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="infigen-anonymous-audit.json";a.click();URL.revokeObjectURL(url);log("AUDIT_EXPORT","POSITIVE","Audit export requested");};
+ function hibernate(reason){if(hibernating)return;hibernating=true;$("appSecurityMode").textContent="HIBERNATED";document.querySelectorAll(".demo-state button").forEach(b=>b.disabled=true);$("securityState").textContent="Protective hibernation: "+reason+". Demo actions are paused pending review.";log("PROTECTIVE_HIBERNATION","NEGATIVE",reason);}
+ window.resumeAfterReview=()=>{if(!hibernating){$("securityState").textContent="Application is already active.";return;}hibernating=false;$("appSecurityMode").textContent="Active";document.querySelectorAll(".demo-state button").forEach(b=>b.disabled=false);$("securityState").textContent="Demo mode resumed after local review. Live functionality remains reserved.";log("HIBERNATION_RELEASE","POSITIVE","Local review acknowledged");};
+ const original=window.demoTransaction;
+ if(typeof original==="function")window.demoTransaction=function(type){if(hibernating)return;const before=$("demoStatus").textContent;original(type);const after=$("demoStatus").textContent;if(after!==before){if(/Enter a valid|Insufficient|Enter a demo recipient/i.test(after)){invalidAttempts.push(Date.now());log("TRANSACTION_VALIDATION_REJECTION","NEGATIVE",after);while(invalidAttempts.length&&Date.now()-invalidAttempts[0]>60000)invalidAttempts.shift();if(invalidAttempts.length>=5)hibernate("Repeated invalid transaction attempts detected locally");}else if(/Simulated .* recorded/.test(after))log("DEMO_TRANSACTION","POSITIVE","Simulated "+type+" recorded");}};
+ window.addEventListener("error",()=>log("CLIENT_ERROR","NEGATIVE","Unexpected client-side error"));
+ log("APP_SESSION_START","POSITIVE","Anonymous local session started");
 })();
 </script></body></html>
