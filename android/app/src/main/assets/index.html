@@ -107,9 +107,10 @@ body.dark-theme #liveMode:checked~.mode-options label[for=liveMode]{background:#
 })();
 
 (function(){
- let balance=10000;const history=[];
+ const storageKey='infigen-demo-session-v1';let balance=10000;const history=[];
+ try{const saved=JSON.parse(localStorage.getItem(storageKey)||'null');if(saved&&Number.isSafeInteger(saved.balance)&&saved.balance>=0&&Array.isArray(saved.history)){balance=saved.balance;saved.history.slice(0,200).forEach(t=>{if(t&&['DEPOSIT','WITHDRAW','TRANSFER'].includes(t.type)&&Number.isSafeInteger(t.amount)&&t.amount>0&&typeof t.id==='string'&&typeof t.time==='string')history.push({type:t.type,amount:t.amount,id:t.id.slice(0,80),time:t.time.slice(0,80)});});}}catch(e){}
  const money=n=>'KSh '+n.toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2});
- function render(){document.getElementById('balance').textContent=money(balance);document.getElementById('transactions').innerHTML=history.length?history.map(t=>'<div class="transaction"><b>'+t.type+'</b> · '+money(t.amount)+'<br><span>'+t.id+' · '+t.time+'</span></div>').join(''):'<div class="transaction">No demo transactions yet.</div>';}
+ function render(){try{localStorage.setItem(storageKey,JSON.stringify({balance,history:history.slice(0,200)}));}catch(e){}document.getElementById('balance').textContent=money(balance);document.getElementById('transactions').innerHTML=history.length?history.map(t=>'<div class="transaction"><b>'+t.type+'</b> · '+money(t.amount)+'<br><span>'+t.id+' · '+t.time+'</span></div>').join(''):'<div class="transaction">No demo transactions yet.</div>';}
  window.demoTransaction=function(type){
   if(!document.getElementById('demoMode').checked){document.getElementById('demoStatus').textContent='Demo actions are disabled while Live mode is selected. Live mode is reserved and locked.';return;}
   const field=type==='deposit'?'depositAmount':type==='withdraw'?'withdrawAmount':'transferAmount';
@@ -133,6 +134,7 @@ body.dark-theme #liveMode:checked~.mode-options label[for=liveMode]{background:#
  async function sha256(s){if(!window.crypto||!window.crypto.subtle)return "UNAVAILABLE";const h=await window.crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,"0")).join("");}
  async function log(kind,assessment,detail){const now=Date.now(),valid=Number.isFinite(now)&&now>0;const r={timestamp:valid?utc():null,timestamp_ms:valid?now:0,kind,assessment:valid?assessment:"NEGATIVE_TIMESTAMP_INTEGRITY",detail:String(detail||"").slice(0,140),anonymous:true,previous_hash:previousHash};r.hash=await sha256(JSON.stringify(r));previousHash=r.hash;audit.push(r);$("auditCount").textContent=audit.length;$("lastHash").textContent=r.hash==="UNAVAILABLE"?"Web Crypto unavailable":r.hash.slice(0,20)+"…";$("detectionAssessment").textContent=r.assessment;if(r.assessment.startsWith("NEGATIVE"))$("securityState").textContent="A negative integrity/security finding was recorded. Review the audit trail.";return r;}
  window.closeHomeMenu=()=>{$("homeMenu").classList.remove("open");$("homeMenuButton").setAttribute("aria-expanded","false");};
+ window.handleAndroidBack=()=>{const menu=$("homeMenu");if(menu&&menu.classList.contains("open")){window.closeHomeMenu();return true;}if(location.hash){history.back();return true;}return false;};
  $("homeMenuButton").addEventListener("click",()=>{const v=$("homeMenu").classList.toggle("open");$("homeMenuButton").setAttribute("aria-expanded",String(v));});
  document.addEventListener("click",e=>{if(!e.target.closest(".menuwrap"))closeHomeMenu();});
  const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
