@@ -7,33 +7,82 @@ header{background:linear-gradient(130deg,#06164b,#064fc5);color:white;padding:24
 .brand{display:flex;align-items:center;gap:12px;font-size:26px;font-weight:800}.mark{width:48px;height:48px;border:2px solid #19d9ff;border-radius:15px;display:grid;place-items:center;color:#ffd24a;font-size:38px}
 small{opacity:.8}.wrap{padding:18px;max-width:620px;margin:auto}.notice{background:#fff4d5;border:1px solid #edcf77;padding:13px;border-radius:12px;line-height:1.5;font-size:13px}
 .balance{margin-top:16px;background:linear-gradient(135deg,#06266e,#0872ed);color:white;padding:22px;border-radius:18px;box-shadow:0 8px 22px #0c3b8725}.balance strong{display:block;font-size:30px;margin-top:8px}
+.mode{margin-top:16px;background:white;border:1px solid #dce5f5;border-radius:15px;padding:17px}.mode h2,.panel h2{font-size:17px;margin:0 0 10px}
+.mode-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mode-option{display:block;border:1px solid #dce5f5;border-radius:12px;padding:12px;cursor:pointer}.mode-option input{margin-right:7px}.mode-option strong{display:block;margin-top:5px}.mode-option span{font-size:12px;color:#64748b}
+#liveMode:checked~.mode-options label[for=liveMode]{border:2px solid #d59b24;background:#fff8e7}
+#demoMode:checked~.mode-options label[for=demoMode]{border:2px solid #0872ed;background:#eef5ff}
+.live-state{display:none;margin-top:12px;background:#fff4d5;border:1px solid #edcf77;padding:12px;border-radius:10px;font-size:13px}
+#liveMode:checked~.live-state{display:block}
+.demo-state{display:block}#liveMode:checked~.demo-state{display:none}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}.tile,.panel{background:white;border:1px solid #dce5f5;border-radius:15px;padding:17px}.tile b{display:block;margin-top:7px}.tile span{font-size:24px}
-.panel{margin-top:15px}.panel h2{font-size:17px;margin:0 0 10px}.row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #edf1f8;font-size:13px}.row:last-child{border:0}
+.panel{margin-top:15px}.row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #edf1f8;font-size:13px}.row:last-child{border:0}
 button{border:0;background:#0a54d5;color:white;padding:12px 16px;border-radius:10px;font-weight:700;width:100%;margin-top:12px}
+button.secondary{background:#e7eefb;color:#15346b}button:disabled{background:#9aa9c1}
+input[type=number],input[type=text]{width:100%;padding:12px;border:1px solid #cbd7eb;border-radius:9px;margin-top:8px;font:inherit}
+.action{margin-top:12px;padding-top:12px;border-top:1px solid #edf1f8}.status{font-size:13px;margin-top:10px;line-height:1.5}.transaction{font-size:12px;padding:9px 0;border-bottom:1px solid #edf1f8;overflow-wrap:anywhere}
 footer{text-align:center;padding:22px;color:#64748b;font-size:12px}
 </style></head><body>
 <header><div class="brand"><div class="mark">∞</div><div>InfiGen<br><small>Bank • Transact • Grow</small></div></div></header>
 <main class="wrap">
-<div class="notice"><b>Development preview</b><br>This Android foundation is a user-interface preview. No real bank account, identity verification, deposit, withdrawal or transfer is enabled yet. Do not enter or submit real identity or banking details.</div>
-<section class="balance"><small>ACCOUNT OVERVIEW · DEMO ONLY</small><strong> KSh — </strong><small>Live balance unavailable until secure banking services are connected.</small></section>
-<div class="grid">
-<div class="tile"><span>↓</span><b>Deposit funds</b><small>Provider integration pending</small></div>
-<div class="tile"><span>↑</span><b>Withdraw funds</b><small>Provider integration pending</small></div>
-<div class="tile"><span>⇄</span><b>Transfer money</b><small>Bank rails pending</small></div>
-<div class="tile"><span>▤</span><b>Statements</b><small>Ledger integration pending</small></div>
+<div class="notice"><b>Development preview</b><br>Demo mode uses simulated, on-device transactions only. No real money moves and no real account is created. Live banking remains reserved and unavailable until authorized providers, secure backend services, compliance checks and production approval are completed. Do not enter real identity or banking details.</div>
+<section class="mode">
+<h2>Choose application mode</h2>
+<input id="demoMode" type="radio" name="appMode" checked>
+<input id="liveMode" type="radio" name="appMode">
+<div class="mode-options">
+<label class="mode-option" for="demoMode">Demo mode<strong>Try sample features</strong><span>Simulated balance and transaction history</span></label>
+<label class="mode-option" for="liveMode">Live mode<strong>Reserved · locked</strong><span>For future authorized activation</span></label>
 </div>
-<section class="panel"><h2>Account registration requirements</h2>
-<div class="row"><span>National ID verification</span><b>Provider required</b></div>
-<div class="row"><span>Verified email and mobile</span><b>Not connected</b></div>
-<div class="row"><span>Unique account number</span><b>Backend required</b></div>
-<div class="row"><span>Activation threshold</span><b>KSh 500</b></div>
-<div class="row"><span>Deposit ceiling</span><b>Subject to provider / law limits</b></div>
+<div class="live-state"><b>Live functionality is reserved.</b><br>It will remain locked until InfiGen is connected to approved banking and payment partners, identity verification, a secure server-side ledger, fraud controls and the required regulatory approvals. Selecting this option does not initiate payments or transmit personal data.</div>
+<div class="demo-state"><div class="status">Demo mode is active. All amounts and transaction references below are fictional and stored only for this current screen session.</div></div>
 </section>
-<section class="panel"><h2>Payment channels planned</h2>
-<div class="row"><span>M-PESA / Safaricom</span><b>Daraja setup required</b></div>
+<section class="balance"><small id="balanceLabel">DEMO BALANCE</small><strong id="balance">KSh 10,000.00</strong><small>Sample funds only · no cash value</small></section>
+<div class="grid">
+<div class="tile"><span>↓</span><b>Deposit funds</b><small>Demo simulation</small></div>
+<div class="tile"><span>↑</span><b>Withdraw funds</b><small>Demo simulation</small></div>
+<div class="tile"><span>⇄</span><b>Transfer money</b><small>Demo simulation</small></div>
+<div class="tile"><span>▤</span><b>Statements</b><small>Demo transaction log</small></div>
+</div>
+<section class="panel demo-state"><h2>Try demo transactions</h2>
+<div class="action"><b>Deposit (simulated)</b><input id="depositAmount" type="number" min="1" step="1" placeholder="Amount in KSh"><button onclick="demoTransaction('deposit')">Add demo funds</button></div>
+<div class="action"><b>Withdraw (simulated)</b><input id="withdrawAmount" type="number" min="1" step="1" placeholder="Amount in KSh"><button class="secondary" onclick="demoTransaction('withdraw')">Withdraw demo funds</button></div>
+<div class="action"><b>Transfer (simulated)</b><input id="recipient" type="text" maxlength="40" placeholder="Demo recipient name or reference"><input id="transferAmount" type="number" min="1" step="1" placeholder="Amount in KSh"><button class="secondary" onclick="demoTransaction('transfer')">Send demo transfer</button></div>
+<div id="demoStatus" class="status" aria-live="polite">Demo transactions do not contact banks, M-PESA, Airtel Money or any external service.</div>
+</section>
+<section class="panel"><h2>Recent demo activity</h2><div id="transactions"><div class="transaction">No demo transactions yet.</div></div></section>
+<section class="panel"><h2>Live account readiness</h2>
+<div class="row"><span>National ID verification</span><b>Authorized provider required</b></div>
+<div class="row"><span>Verified email and mobile</span><b>Secure backend required</b></div>
+<div class="row"><span>Unique account number</span><b>Server-side issuance required</b></div>
+<div class="row"><span>Activation threshold</span><b>KSh 500 · pending live rules</b></div>
+<div class="row"><span>Deposit ceiling</span><b>Provider / legal limits apply</b></div>
+</section>
+<section class="panel"><h2>Live payment channels · reserved</h2>
+<div class="row"><span>M-PESA / Safaricom</span><b>Authorized Daraja setup</b></div>
 <div class="row"><span>Airtel Money</span><b>Partner API required</b></div>
 <div class="row"><span>Kenyan banks</span><b>Banking partner required</b></div>
 <div class="row"><span>Other licensed providers</span><b>Contract and API required</b></div>
 </section>
-</main><footer>InfiGen · Powered by Infinity Cyber Technologies<br>Secure services will be enabled only after provider verification and compliance review.</footer>
-</body></html>
+</main><footer>InfiGen · Powered by Infinity Cyber Technologies<br>Live services remain disabled until authorized integration and compliance approval.</footer>
+<script>
+(function(){
+ let balance=10000;const history=[];
+ const money=n=>'KSh '+n.toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2});
+ function render(){document.getElementById('balance').textContent=money(balance);document.getElementById('transactions').innerHTML=history.length?history.map(t=>'<div class="transaction"><b>'+t.type+'</b> · '+money(t.amount)+'<br><span>'+t.id+' · '+t.time+'</span></div>').join(''):'<div class="transaction">No demo transactions yet.</div>';}
+ window.demoTransaction=function(type){
+  if(!document.getElementById('demoMode').checked){document.getElementById('demoStatus').textContent='Demo actions are disabled while Live mode is selected. Live mode is reserved and locked.';return;}
+  const field=type==='deposit'?'depositAmount':type==='withdraw'?'withdrawAmount':'transferAmount';
+  const amount=Number(document.getElementById(field).value);
+  if(!Number.isSafeInteger(amount)||amount<=0){document.getElementById('demoStatus').textContent='Enter a valid whole-number amount greater than zero.';return;}
+  if(type!=='deposit'&&amount>balance){document.getElementById('demoStatus').textContent='Insufficient demo balance.';return;}
+  if(type==='transfer'&&!document.getElementById('recipient').value.trim()){document.getElementById('demoStatus').textContent='Enter a demo recipient reference.';return;}
+  balance+=type==='deposit'?amount:-amount;
+  const id='DEMO-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,7).toUpperCase();
+  history.unshift({type:type.toUpperCase(),amount,id,time:new Date().toLocaleString()});
+  document.getElementById('demoStatus').textContent='Simulated '+type+' recorded. Reference: '+id+'. No real money moved.';
+  document.getElementById(field).value='';render();
+ };
+ document.getElementById('liveMode').addEventListener('change',function(){document.getElementById('demoStatus').textContent='Live mode is reserved. No live banking actions are available.';});
+ render();
+})();
+</script></body></html>
