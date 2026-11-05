@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: infigen-marketplace
+    runtime: node
+    plan: starter
+    buildCommand: npm install --omit=dev --no-audit --no-fund
+    startCommand: npm start
+    healthCheckPath: /api/health
+    disk:
+      name: infigen-private-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATA_DIR
+        value: /data
+      - key: MPESA_ENVIRONMENT
+        value: sandbox
+      - key: ALLOW_LIVE_PAYMENTS
+        value: "false"
+      - key: MPESA_TRANSACTION_TYPE
+        value: CustomerPayBillOnline
+      - key: ADMIN_API_TOKEN
+        generateValue: true
