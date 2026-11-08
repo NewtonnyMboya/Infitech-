@@ -145,6 +145,14 @@ begin
     raise exception 'Demo account not found or unavailable' using errcode = 'P0002';
   end if;
 
+  -- Recheck after acquiring the account lock to make concurrent retries idempotent.
+  select * into v_existing from public.infigen_transactions t
+    where t.user_id = v_user_id and t.idempotency_key = p_idempotency_key;
+  if found then
+    return query select v_existing.id, v_existing.balance_after_minor, v_existing.status;
+    return;
+  end if;
+
   if p_direction = 'debit' and v_account.balance_minor < p_amount_minor then
     raise exception 'Insufficient demo balance' using errcode = '22003';
   end if;
