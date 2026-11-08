@@ -10,6 +10,7 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,36 +18,79 @@ import java.util.List;
 public final class MainActivity extends Activity {
     private WebView webView;
     private boolean backRequestPending = false;
-    // Keep print WebViews alive while Android's print spooler consumes their adapters.
+    // Retain print WebViews until the Android print spooler has consumed their adapters.
     private final List<WebView> printViews = new ArrayList<>();
 
     private final class AndroidPrintBridge {
         @JavascriptInterface
+        public boolean isAvailable() {
+            return true;
+        }
+
+        @JavascriptInterface
         public void printDocument(String title, String html) {
-            if (title == null || html == null || html.length() > 1_000_000) return;
+            if (title == null || html == null || html.length() > 1_000_000) {
+                notifyPrintStatus("Print request rejected: invalid or oversized document.");
+                return;
+            }
             runOnUiThread(() -> startPrintJob(title, html));
         }
     }
 
-    private void startPrintJob(String title, String html) {
-        if (isFinishing() || isDestroyed()) return;
-        WebView printView = new WebView(this);
-        WebSettings printSettings = printView.getSettings();
-        printSettings.setJavaScriptEnabled(false);
-        printSettings.setAllowFileAccess(false);
-        printSettings.setAllowContentAccess(false);
-        printViews.add(printView);
-        printView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                PrintManager manager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
-                if (manager == null) return;
-                String jobName = title.trim().isEmpty() ? "InfiGen document" : title;
-                manager.print(jobName, view.createPrintDocumentAdapter(jobName),
-                    new PrintAttributes.Builder().build());
+    private void notifyPrintStatus(String message) {
+        runOnUiThread(() -> {
+            if (webView != null && !isFinishing() && !isDestroyed()) {
+                String safe = message.replace("\\", "\\\\").replace("'", "\\'");
+                webView.evaluateJavascript(
+                    "if(typeof window.onNativePrintStatus==='function'){window.onNativePrintStatus('" + safe + "');}",
+                    null
+                );
             }
         });
-        printView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null);
+    }
+
+    private void startPrintJob(String title, String html) {
+        if (isFinishing() || isDestroyed()) {
+            notifyPrintStatus("Print unavailable: InfiGen is closing.");
+            return;
+        }
+        try {
+            PrintManager manager = (PrintManager) getSystemService(Context.PRINT_SERVICE);
+            if (manager == null) {
+                notifyPrintStatus("Android print service is unavailable on this device.");
+                Toast.makeText(this, "Android print service unavailable", Toast.LENGTH_LONG).show();
+                return;
+            }
+
+            WebView printView = new WebView(this);
+            WebSettings printSettings = printView.getSettings();
+            printSettings.setJavaScriptEnabled(false);
+            printSettings.setAllowFileAccess(false);
+            printSettings.setAllowContentAccess(false);
+            printViews.add(printView);
+            final boolean[] submitted = {false};
+            printView.setWebViewClient(new WebViewClient() {
+                @Override
+                public void onPageFinished(WebView view, String url) {
+                    if (submitted[0]) return;
+                    submitted[0] = true;
+                    try {
+                        String jobName = title.trim().isEmpty() ? "InfiGen document" : title;
+                        manager.print(jobName, view.createPrintDocumentAdapter(jobName),
+                            new PrintAttributes.Builder().build());
+                        notifyPrintStatus("Android print interface requested. Select a printer or Save as PDF.");
+                    } catch (RuntimeException ex) {
+                        notifyPrintStatus("Could not start Android printing: " + ex.getClass().getSimpleName());
+                        Toast.makeText(MainActivity.this, "Could not start Android printing", Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+            printView.loadDataWithBaseURL("https://infigen.local/", html, "text/html", "UTF-8", null);
+            notifyPrintStatus("Preparing document for Android printing…");
+        } catch (RuntimeException ex) {
+            notifyPrintStatus("Android printing failed: " + ex.getClass().getSimpleName());
+            Toast.makeText(this, "Android printing failed", Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override
@@ -55,15 +99,12 @@ public final class MainActivity extends Activity {
         webView = new WebView(this);
         webView.setWebViewClient(new WebViewClient());
         WebSettings settings = webView.getSettings();
-
-        // The app UI is bundled locally. The bridge only opens Android's print UI.
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         settings.setDatabaseEnabled(false);
         webView.addJavascriptInterface(new AndroidPrintBridge(), "AndroidPrint");
-
         setContentView(webView);
         if (savedInstanceState == null || webView.restoreState(savedInstanceState) == null) {
             webView.loadUrl("file:///android_asset/index.html");
