@@ -409,9 +409,8 @@ body.dark-theme .auth-card{background:#151f30;border-color:#34445c;color:#e5edf9
       try{const {error}=await client.auth.signOut();if(error)throw error;setSignedIn(null);status('Signed out. Your server-side records remain associated with your account.');}
       catch(e){status('Sign-out failed: '+(e.message||'Please retry.'));}finally{busy=false;}
     });
-    client.auth.onAuthStateChange((event,session)=>{
-      if(event==='SIGNED_OUT'){setSignedIn(null);return;}
-      if(session?.user&&event==='SIGNED_IN')Promise.resolve().then(()=>activate(session.user));
+    client.auth.onAuthStateChange((event)=>{
+      if(event==='SIGNED_OUT'){setSignedIn(null);status('Signed out. Your server-side records remain associated with your account.');}
     });
     client.auth.getSession().then(({data,error})=>{if(error)throw error;if(data.session?.user)activate(data.session.user);
       else{setSignedIn(null);status('Not signed in. Sign in or create a customer profile to connect your demo account.');}})
