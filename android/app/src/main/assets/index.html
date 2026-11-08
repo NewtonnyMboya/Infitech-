@@ -162,14 +162,15 @@ body.dark-theme .auth-card{background:#151f30;border-color:#34445c;color:#e5edf9
  const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
  const fmt=n=>"KSh "+Number(n).toLocaleString("en-KE",{minimumFractionDigits:2,maximumFractionDigits:2});
  function printDoc(title,body){
+  const safeTitle=esc(title);
+  const html="<!doctype html><html><head><meta charset='utf-8'><title>"+safeTitle+"</title><meta name='viewport' content='width=device-width,initial-scale=1'><style>body{font:14px Arial,sans-serif;padding:24px;color:#111}h1{font-size:22px}table{width:100%;border-collapse:collapse}td,th{padding:9px;border-bottom:1px solid #ccc;text-align:left}.muted{font-size:12px;color:#555}@media print{body{padding:0}}</style></head><body>"+body+"<p class='muted'>InfiGen DEMO DOCUMENT · Not a bank-issued document · "+utc()+"</p></body></html>";
+  if(window.AndroidPrint&&typeof window.AndroidPrint.printDocument==="function"){
+   window.AndroidPrint.printDocument(title,html);
+   return true;
+  }
   const w=window.open("","_blank");
   if(!w){$("printStatus").textContent="Print window blocked. Allow pop-ups and try again.";return false;}
-  const safeTitle=esc(title);
-  w.document.open();
-  w.document.write("<!doctype html><html><head><meta charset='utf-8'><title>"+safeTitle+"</title><meta name='viewport' content='width=device-width,initial-scale=1'><style>body{font:14px Arial,sans-serif;padding:24px;color:#111}h1{font-size:22px}table{width:100%;border-collapse:collapse}td,th{padding:9px;border-bottom:1px solid #ccc;text-align:left}.muted{font-size:12px;color:#555}@media print{body{padding:0}}</style></head><body>"+body+"<p class='muted'>InfiGen DEMO DOCUMENT · Not a bank-issued document · "+utc()+"</p></body></html>");
-  w.document.close();
-  w.focus();
-  w.print();
+  w.document.open();w.document.write(html);w.document.close();w.focus();w.print();
   return true;
  }
  function rows(){return Array.from(document.querySelectorAll("#transactions .transaction")).filter(x=>!x.textContent.includes("No demo transactions")).map(el=>{const t=el.innerText.split("\n"),m=t[0].match(/KSh\s*([\d,.]+)/);return {type:t[0].split(" · ")[0],amount:m?Number(m[1].replace(/,/g,"")):0,ref:(t[1]||"").split(" · ")[0],time:(t[1]||"").split(" · ").slice(1).join(" · ")};});}
