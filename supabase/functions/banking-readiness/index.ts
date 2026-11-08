@@ -22,23 +22,46 @@ Deno.serve(async (req: Request) => {
   });
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return json({ error: "invalid_session" }, 401);
+
+  // Presence of credentials is not proof that a provider sandbox has passed certification.
+  const mpesaCredentialsPresent = Boolean(
+    Deno.env.get("DARAJA_CONSUMER_KEY") && Deno.env.get("DARAJA_CONSUMER_SECRET") &&
+    Deno.env.get("DARAJA_SHORTCODE") && Deno.env.get("DARAJA_PASSKEY")
+  );
+  const airtelCredentialsPresent = Boolean(
+    Deno.env.get("AIRTEL_CLIENT_ID") && Deno.env.get("AIRTEL_CLIENT_SECRET")
+  );
   const mpesaApproved = Deno.env.get("MPESA_PRODUCTION_APPROVED") === "true";
   const airtelApproved = Deno.env.get("AIRTEL_PRODUCTION_APPROVED") === "true";
-  const mpesaConfigured = Boolean(Deno.env.get("DARAJA_CONSUMER_KEY") && Deno.env.get("DARAJA_CONSUMER_SECRET") && Deno.env.get("DARAJA_SHORTCODE") && Deno.env.get("DARAJA_PASSKEY"));
-  const airtelConfigured = Boolean(Deno.env.get("AIRTEL_CLIENT_ID") && Deno.env.get("AIRTEL_CLIENT_SECRET"));
+
   return json({
     userId: data.user.id,
+    environment: "pre_authorization",
     liveMoneyMovementEnabled: false,
     providers: {
-      mpesa: { sandboxReady: mpesaConfigured, productionApproved: mpesaApproved, status: mpesaApproved && mpesaConfigured ? "requires_end_to_end_validation" : "not_ready" },
-      airtelMoney: { sandboxReady: airtelConfigured, productionApproved: airtelApproved, status: airtelApproved && airtelConfigured ? "requires_end_to_end_validation" : "not_ready" },
+      mpesa: {
+        credentialsPresent: mpesaCredentialsPresent,
+        sandboxAdapterImplemented: false,
+        sandboxTested: false,
+        productionApproved: mpesaApproved,
+        status: "awaiting_credentials_and_sandbox_validation",
+      },
+      airtelMoney: {
+        credentialsPresent: airtelCredentialsPresent,
+        sandboxAdapterImplemented: false,
+        sandboxTested: false,
+        productionApproved: airtelApproved,
+        status: "awaiting_credentials_and_sandbox_validation",
+      },
     },
-    requirements: [
-      "Complete provider onboarding and written production approval",
-      "Configure credentials as Supabase Edge Function secrets",
-      "Implement and verify authentic provider callbacks",
-      "Run reconciliation, idempotency, reversal, fraud and security tests",
-      "Obtain applicable financial-services authorization before live use",
+    nextSteps: [
+      "Obtain M-PESA Daraja sandbox access and complete the provider's onboarding.",
+      "Obtain Airtel Africa Money sandbox access and complete the provider's onboarding.",
+      "Configure sandbox credentials only as Supabase Edge Function secrets; never in the APK or database.",
+      "Implement provider-specific OAuth, request signing, timeout handling and token caching server-side.",
+      "Implement authenticated, signature-verified callbacks with replay protection and idempotent ledger posting.",
+      "Run successful, rejected, timeout, duplicate callback, reversal and reconciliation tests for each provider.",
+      "Obtain written production approval and applicable legal/regulatory authorization before production activation.",
     ],
   });
 });
