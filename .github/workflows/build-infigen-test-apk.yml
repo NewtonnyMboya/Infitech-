@@ -1,0 +1,44 @@
+name: Build InfiGen side-by-side test APK
+on:
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        description: Branch containing the isolated test application
+        required: true
+        default: infigen-side-by-side-test
+        type: choice
+        options:
+          - infigen-side-by-side-test
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out isolated test source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_branch }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Build isolated test APK
+        working-directory: android
+        run: gradle assembleDebug
+      - name: Verify package configuration and APK
+        run: |
+          grep -q "applicationId 'ke.infinitycyber.infigen.test'" android/app/build.gradle
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload isolated test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: infigen-side-by-side-test-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
