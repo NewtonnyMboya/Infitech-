@@ -1,0 +1,64 @@
+name: Deploy InfiGen Supabase sandbox functions
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_sandbox_deploy:
+        description: Confirm this deploy is sandbox-only (no live money movement)
+        required: true
+        type: choice
+        options:
+          - "I understand — sandbox only"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infigen-supabase-sandbox-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-sandbox-functions:
+    if: github.ref == 'refs/heads/infigen-live-readiness' && inputs.confirm_sandbox_deploy == 'I understand — sandbox only'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out deployment branch
+        uses: actions/checkout@v4
+        with:
+          ref: infigen-live-readiness
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Supabase CLI
+        run: npm install --global supabase@2
+
+      - name: Verify required function source files
+        run: |
+          test -f supabase/functions/mpesa-stk-sandbox-initiate/index.ts
+          test -f supabase/functions/mpesa-stk-callback/index.ts
+          test -f supabase/functions/banking-readiness/index.ts
+
+      - name: Deploy authenticated sandbox STK initiation
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          supabase functions deploy mpesa-stk-sandbox-initiate --project-ref ftcinepxmdyrpwjjtviu
+
+      - name: Deploy public callback intake (verification remains server-side)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          supabase functions deploy mpesa-stk-callback --no-verify-jwt --project-ref ftcinepxmdyrpwjjtviu
+
+      - name: Deploy authenticated banking readiness
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          supabase functions deploy banking-readiness --project-ref ftcinepxmdyrpwjjtviu
