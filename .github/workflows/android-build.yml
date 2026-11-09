@@ -1,11 +1,8 @@
-name: InfiGen Android build
+name: InfiGen side-by-side test APK build
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [ infigen-android-foundation ]
-    paths: [ "android/**", ".github/workflows/android-build.yml" ]
   push:
-    branches: [ infigen-android-foundation, infigen-live-readiness ]
+    branches: [ infigen-side-by-side-test ]
     paths: [ "android/**", ".github/workflows/android-build.yml" ]
 
 permissions:
@@ -23,12 +20,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Build debug APK
+      - name: Build isolated test APK
         working-directory: android
         run: gradle assembleDebug
-      - name: Upload APK
+      - name: Verify APK output
+        run: |
+          test -s android/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload isolated test APK
         uses: actions/upload-artifact@v4
         with:
-          name: infigen-debug-apk
+          name: infigen-side-by-side-test-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
