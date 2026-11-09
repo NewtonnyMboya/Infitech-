@@ -1,8 +1,11 @@
 name: InfiGen Android build
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     branches: [ infigen-android-foundation ]
+    paths: [ "android/**", ".github/workflows/android-build.yml" ]
+  push:
+    branches: [ infigen-android-foundation, infigen-live-readiness ]
     paths: [ "android/**", ".github/workflows/android-build.yml" ]
 
 permissions:
