@@ -45,3 +45,20 @@ The Android app may submit an authenticated intent only. It must never call prov
 
 ## Current blocking facts
 Production authorization is pending. No provider credentials or sandbox test evidence has been supplied/verified in this repository. Therefore no real collection or payout may be initiated, and a provider response, redirect, or client-side screen must never be represented as a completed payment. The existing payment-initiate function must continue returning live_payments_disabled for production and must not advertise sandbox checkout as functional until the adapter and callbacks are implemented and tested.
+
+
+## M-PESA STK sandbox implementation status (2026-11-09)
+
+The branch now contains:
+- `supabase/migrations/202611090003_mpesa_stk_intents.sql`: payment intent and redacted provider-event tables, owner-only intent reads, uniqueness/idempotency constraints.
+- `supabase/functions/mpesa-stk-sandbox-initiate/index.ts`: sandbox-only STK initiation, authenticated caller, account ownership check, Kenyan phone/amount validation, server-side credentials, idempotency key, bounded provider requests, and conservative unknown status for ambiguous failures.
+- `supabase/functions/mpesa-stk-callback/index.ts`: callback intake with body hash and redacted metadata. It only records callback arrival and does not credit balances or mark success.
+- `supabase/functions/banking-readiness/index.ts`: independent collection and payout readiness reports.
+
+Important limitations:
+- These files are committed to GitHub; they have NOT been deployed to Supabase by this change.
+- No credentials have been tested, no sandbox request has been made, and no end-to-end callback has been verified.
+- The existing Android app's payment initiation flow has not yet been confirmed wired to the new sandbox function.
+- A separate STK status/reconciliation function is still required. Only that server-side verifier may finalize an intent after matching provider-confirmed checkout ID, result, amount, merchant/shortcode, and receipt. Ledger posting must be atomic and idempotent.
+- The callback endpoint is public and treats every incoming callback as untrusted. Never trust its ResultCode, phone, amount or receipt by itself.
+- Production stays disabled. Do not add production endpoint selection or production secrets to the sandbox function.
