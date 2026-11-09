@@ -96,7 +96,8 @@ Deno.serve(async (req: Request) => {
         status: "callback_received_pending_verification",
         provider_result_code: resultCode,
         provider_result_description: resultDescription,
-        provider_receipt: receipt,
+        // Do not copy an unverified callback receipt into the intent's unique receipt field.
+        // The raw receipt candidate remains only in the redacted event table until reconciliation.
         callback_received_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
