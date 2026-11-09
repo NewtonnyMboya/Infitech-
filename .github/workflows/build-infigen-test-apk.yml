@@ -31,11 +31,21 @@ jobs:
       - name: Build isolated test APK
         working-directory: android
         run: gradle assembleDebug
-      - name: Verify package configuration and APK
+      - name: Verify actual APK package identity and contents
+        shell: bash
         run: |
-          grep -q "applicationId 'ke.infinitycyber.infigen.test'" android/app/build.gradle
-          test -s android/app/build/outputs/apk/debug/app-debug.apk
-          ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          test -x "$AAPT"
+          BADGING="$("$AAPT" dump badging "$APK")"
+          echo "$BADGING" | grep -F "package: name='ke.infinitycyber.infigen.test'"
+          echo "$BADGING" | grep -F "application-label:'InfiGen Test'"
+          unzip -l "$APK" | grep -F "assets/index.html"
+          unzip -l "$APK" | grep -F "classes.dex"
+          sha256sum "$APK"
+          ls -lh "$APK"
       - name: Upload isolated test APK
         uses: actions/upload-artifact@v4
         with:
