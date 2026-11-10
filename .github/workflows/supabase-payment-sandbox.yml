@@ -1,0 +1,52 @@
+name: Deploy InfiGen M-PESA sandbox payment functions
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_sandbox_only:
+        description: Confirm this is sandbox-only and cannot move live money
+        required: true
+        type: choice
+        options:
+          - "I understand — sandbox only"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infigen-mpesa-sandbox-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-sandbox:
+    if: github.ref == 'refs/heads/infigen-payment-sandbox' && inputs.confirm_sandbox_only == 'I understand — sandbox only'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: infigen-payment-sandbox
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check payment functions
+        run: |
+          deno check supabase/functions/mpesa-payment-initiate/index.ts
+          deno check supabase/functions/mpesa-payment-callback/index.ts
+      - name: Install Supabase CLI
+        run: npm install --global supabase@2
+      - name: Verify required secret and project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test "ftcinepxmdyrpwjjtviu" = "ftcinepxmdyrpwjjtviu"
+      - name: Deploy authenticated sandbox payment initiation
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy mpesa-payment-initiate --project-ref ftcinepxmdyrpwjjtviu
+      - name: Deploy public callback intake (no ledger posting)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase functions deploy mpesa-payment-callback --no-verify-jwt --project-ref ftcinepxmdyrpwjjtviu
