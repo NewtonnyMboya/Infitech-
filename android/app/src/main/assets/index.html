@@ -265,33 +265,7 @@ body.dark-theme .mode-option{background:#10243a}
  window.onNativePrintStatus=message=>{const el=$("printStatus");if(el)el.textContent=String(message||"Android print status unavailable.");};
  function printDoc(title,body){
   const safeTitle=esc(title);
-   const html="<!doctype html><html><head><meta charset='utf-8'><title>"+safeTitle+"</title><meta name='viewport' content='width=device-width,initial-scale=1'><style>@page{size:auto;margin:14mm}*{box-sizing:border-box}body{font:14px Arial,sans-serif;padding:8px 12px;color:#111;max-width:760px;margin:0 auto}h1{font-size:21px;margin:0 0 22px;padding-bottom:12px;border-bottom:2px solid #222}p{line-height:1.55;margin:12px 0;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;table-layout:fixed}td,th{padding:9px 7px;border-bottom:1px solid #ccc;text-align:left;overflow-wrap:anywhere}.muted{font-size:11px;color:#555;margin-top:24px;border-top:1px solid #ddd;padding-top:10px}@media print{body{padding:0;max-width:none}}</style></head><body>"+body+"<p class='muted'>InfiGen DEMO DOCUMENT · Not a bank-issued document · "+esc(utc())+"</p>
-<script>
-(function(){
- const items=[
-  {title:"Banking services · KCB",copy:"Potential bank provider spotlight. No partnership, account access or service integration is implied."},
-  {title:"Digital finance · Equity",copy:"Illustrative provider discovery only. Equity services are not connected to this InfiGen test app."},
-  {title:"Banking services · Co-operative Bank",copy:"Potential provider information. No affiliation, endorsement or live banking service is claimed."},
-  {title:"Financial services · NCBA",copy:"Illustrative promotion slot. Provider availability and integration would require formal approval."},
-  {title:"Banking services · Absa",copy:"Potential provider spotlight only. This app does not currently connect to Absa services."}
- ];
- const card=document.getElementById("providerSpotlight"),title=document.getElementById("spotTitle"),copy=document.getElementById("spotCopy"),close=document.getElementById("spotClose"),progress=document.getElementById("spotProgress");
- if(!card||!title||!copy||!close)return;
- let index=0,timeout=null,paused=false;
- function schedule(){if(timeout)clearTimeout(timeout);timeout=setTimeout(showNext,10000);}
- function showNext(){
-  if(paused)return;
-  const item=items[index%items.length];index++;
-  title.textContent=item.title;copy.textContent=item.copy;
-  if(progress){progress.style.animation="none";void progress.offsetWidth;progress.style.animation="spotTimer 10s linear forwards";}
-  card.hidden=false;schedule();
- }
- close.addEventListener("click",()=>{card.hidden=true;if(timeout)clearTimeout(timeout);schedule();});
- document.addEventListener("visibilitychange",()=>{if(document.hidden){if(timeout)clearTimeout(timeout);}else if(!card.hidden)schedule();else if(!paused)showNext();});
- if(!window.matchMedia||!window.matchMedia("(prefers-reduced-motion: reduce)").matches){setTimeout(showNext,1800);}else{setTimeout(showNext,1800);}
-})();
-</script>
-</body></html>";
+   const html="<!doctype html><html><head><meta charset='utf-8'><title>"+safeTitle+"</title><meta name='viewport' content='width=device-width,initial-scale=1'><style>@page{size:auto;margin:14mm}*{box-sizing:border-box}body{font:14px Arial,sans-serif;padding:8px 12px;color:#111;max-width:760px;margin:0 auto}h1{font-size:21px;margin:0 0 22px;padding-bottom:12px;border-bottom:2px solid #222}p{line-height:1.55;margin:12px 0;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;table-layout:fixed}td,th{padding:9px 7px;border-bottom:1px solid #ccc;text-align:left;overflow-wrap:anywhere}.muted{font-size:11px;color:#555;margin-top:24px;border-top:1px solid #ddd;padding-top:10px}@media print{body{padding:0;max-width:none}}</style></head><body>"+body+"<p class='muted'>InfiGen DEMO DOCUMENT · Not a bank-issued document · "+esc(utc())+"</p></body></html>";
   if(window.AndroidPrint&&typeof window.AndroidPrint.printDocument==="function"){
    try{
     if(typeof window.AndroidPrint.isAvailable==="function"&&!window.AndroidPrint.isAvailable()){
@@ -489,4 +463,29 @@ body.dark-theme .mode-option{background:#10243a}
   init();
 })();
 </script>
+<script>
+(function(){
+ const items=[
+  {title:"Banking services · KCB",copy:"Potential bank provider spotlight. No partnership, account access or service integration is implied."},
+  {title:"Digital finance · Equity",copy:"Illustrative provider discovery only. Equity services are not connected to this InfiGen test app."},
+  {title:"Banking services · Co-operative Bank",copy:"Potential provider information. No affiliation, endorsement or live banking service is claimed."},
+  {title:"Financial services · NCBA",copy:"Illustrative promotion slot. Provider availability and integration would require formal approval."},
+  {title:"Banking services · Absa",copy:"Potential provider spotlight only. This app does not currently connect to Absa services."}
+ ];
+ const card=document.getElementById("providerSpotlight"),title=document.getElementById("spotTitle"),copy=document.getElementById("spotCopy"),close=document.getElementById("spotClose"),progress=document.getElementById("spotProgress");
+ if(!card||!title||!copy||!close)return;
+ let index=0,timeout=null,paused=false;
+ function schedule(){if(timeout)clearTimeout(timeout);timeout=setTimeout(showNext,10000);}
+ function showNext(){
+  if(paused)return;
+  const item=items[index%items.length];index++;
+  title.textContent=item.title;copy.textContent=item.copy;
+  if(progress){progress.style.animation="none";void progress.offsetWidth;progress.style.animation="spotTimer 10s linear forwards";}
+  card.hidden=false;schedule();
+ }
+ close.addEventListener("click",()=>{card.hidden=true;if(timeout)clearTimeout(timeout);schedule();});
+ document.addEventListener("visibilitychange",()=>{if(document.hidden){if(timeout)clearTimeout(timeout);}else if(!card.hidden)schedule();else if(!paused)showNext();});
+ if(!window.matchMedia||!window.matchMedia("(prefers-reduced-motion: reduce)").matches){setTimeout(showNext,1800);}else{setTimeout(showNext,1800);}
+})();
+
 </body></html>
