@@ -61,6 +61,50 @@ body.dark-theme .readiness-result{background:#0f1929;color:#e5edf9}
 .payment-sandbox select,.payment-sandbox input{width:100%;padding:12px;border:1px solid #cbd7eb;border-radius:9px;margin-top:6px;font:inherit;background:white;color:#10234d}
 .payment-status{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 ui-monospace,monospace;background:#fff;border-radius:9px;padding:10px;margin-top:10px}
 body.dark-theme .payment-sandbox{background:#2b2518;border-color:#78632b}body.dark-theme .payment-sandbox select,body.dark-theme .payment-sandbox input,body.dark-theme .payment-status{background:#0f1929;color:#e5edf9;border-color:#40516b}
+
+/* InfiGen Neo-finance visual system */
+:root{color-scheme:light;--neo-bg:#07111f;--neo-surface:#101e32;--neo-line:#203752;--neo-cyan:#32d7ff;--neo-blue:#3478ff;--neo-text:#eaf4ff}
+body{background:radial-gradient(ellipse at 50% -15%,#1b4c83 0,transparent 42%),#07111f;color:var(--neo-text);padding-bottom:104px}
+header{background:linear-gradient(125deg,#071a31 0%,#0b3970 55%,#075b9d 100%);border-bottom:1px solid #2a91c7;border-radius:0 0 28px 28px;box-shadow:0 14px 38px #0007;position:relative;overflow:hidden}
+header:after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,#32d7ff12 50%,transparent 65%);pointer-events:none}
+.brand{letter-spacing:.3px}.mark{background:#0c2948;box-shadow:0 0 22px #19d9ff55;text-shadow:0 0 16px #19d9ff}
+.wrap{max-width:680px}
+.balance{background:linear-gradient(135deg,#0b2b52,#075eaa 58%,#087fc3);border:1px solid #3ab8e966;box-shadow:0 12px 34px #001d3d99;position:relative;overflow:hidden}
+.balance:after{content:"";position:absolute;width:190px;height:190px;border:1px solid #8cecff33;border-radius:50%;right:-65px;top:-95px;box-shadow:0 0 0 20px #8cecff0b,0 0 0 42px #8cecff08}
+.mode,.tile,.panel,.auth-card{background:linear-gradient(145deg,#12243a,#0d1a2c);border:1px solid #29415d;color:#eaf4ff;box-shadow:0 8px 24px #0003}
+.notice{background:#172b40;border-color:#9b7b3d;color:#ffe9b4}
+.mode-option{border-color:#34516f;color:#eaf4ff}.mode-option span,.secure-note{color:#a9bfd5}
+input[type=number],input[type=text],.payment-sandbox select,.payment-sandbox input{background:#081729;color:#eaf4ff;border-color:#35516d}
+button{background:linear-gradient(110deg,#0876db,#08a5c8);box-shadow:0 5px 16px #087bd333;transition:transform .18s,filter .18s}
+button:active{transform:scale(.985)}button.secondary{background:#203750;color:#dff6ff}
+.readiness-tools,.readiness-cell,.readiness-result,.customer-box{background:#10243a;border-color:#34516e;color:#eaf4ff}
+.payment-sandbox{background:#2b271c;border-color:#806b3d}
+footer{color:#8ea8c2}
+body.dark-theme{background:#07111f;color:#eaf4ff}
+body.dark-theme .mode,body.dark-theme .tile,body.dark-theme .panel,body.dark-theme .auth-card{background:linear-gradient(145deg,#12243a,#0d1a2c);border-color:#29415d;color:#eaf4ff}
+body.dark-theme .notice{background:#172b40;border-color:#9b7b3d;color:#ffe9b4}
+body.dark-theme .readiness-tools,body.dark-theme .readiness-cell,body.dark-theme .readiness-result,body.dark-theme .customer-box{background:#10243a;border-color:#34516e;color:#eaf4ff}
+body.dark-theme .payment-sandbox{background:#2b271c;border-color:#806b3d}
+body.dark-theme input[type=number],body.dark-theme input[type=text],body.dark-theme .payment-sandbox select,body.dark-theme .payment-sandbox input,body.dark-theme .payment-status{background:#081729;color:#eaf4ff;border-color:#35516d}
+body.dark-theme .mode-option{background:#10243a}
+.partner-dock{position:fixed;z-index:80;left:0;right:0;bottom:0;padding:10px max(14px,env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));background:#071625ed;border-top:1px solid #2d597b;backdrop-filter:blur(16px);box-shadow:0 -10px 30px #0005}
+.partner-caption{text-align:center;color:#9db8d0;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px}
+.partner-list{display:flex;justify-content:center;align-items:center;gap:10px;max-width:620px;margin:auto}
+.partner-chip{display:flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #31516c;border-radius:12px;background:#10263d;color:#e9f8ff;font-size:12px;font-weight:750;min-width:0}
+.partner-chip .provider-mark{display:grid;place-items:center;width:25px;height:25px;border-radius:8px;background:#0876a8;color:white;font-size:11px;font-weight:900}
+.partner-chip small{display:block;font-size:9px;color:#a6bfd4;font-weight:500}
+.provider-spotlight{position:fixed;z-index:90;left:16px;right:16px;bottom:112px;max-width:560px;margin:auto;padding:15px 48px 15px 15px;border:1px solid #4e8bb4;border-radius:17px;background:linear-gradient(135deg,#102b49f5,#142039f5);color:#eef8ff;box-shadow:0 18px 48px #0009;backdrop-filter:blur(18px);animation:spotIn .35s ease-out}
+.provider-spotlight[hidden]{display:none}
+.provider-spotlight .eyebrow{font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:#75dfff;font-weight:800}
+.provider-spotlight strong{display:block;font-size:16px;margin:5px 0}
+.provider-spotlight p{font-size:12px;line-height:1.45;color:#c1d7e9;margin:0}
+.provider-spotlight .spot-close{position:absolute;right:10px;top:9px;width:30px;height:30px;margin:0;padding:0;border-radius:9px;background:#29445e;color:#fff}
+.spot-progress{height:3px;background:#ffffff22;border-radius:9px;overflow:hidden;margin-top:11px}
+.spot-progress i{display:block;height:100%;width:100%;background:#32d7ff;transform-origin:left;animation:spotTimer 10s linear forwards}
+@keyframes spotIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spotTimer{to{transform:scaleX(0)}}
+@media(max-width:380px){.partner-list{gap:6px}.partner-chip{padding:6px 8px;font-size:10px}.partner-chip small{font-size:8px}}
+@media(prefers-reduced-motion:reduce){.provider-spotlight{animation:none}.spot-progress i{animation:none}}
 </style></head><body>
 <header><div class="brand"><div class="mark">∞</div><div>InfiGen<br><small>Bank • Transact • Grow</small></div></div></header>
 <main class="wrap" id="overview"><div class="homebar"><div class="menuwrap"><button class="homebtn" id="homeMenuButton" aria-expanded="false" aria-controls="homeMenu">⌂ Home ▾</button><nav class="menupanel" id="homeMenu" aria-label="Application menu"><a href="#overview" onclick="closeHomeMenu()">⌂ Overview</a><a href="#demo-actions" onclick="closeHomeMenu()">⇄ Transactions</a><a href="#activity" onclick="closeHomeMenu()">▤ Transaction history</a><a href="#statements" onclick="closeHomeMenu()">▧ Receipts & statements</a><a href="#live-readiness" onclick="closeHomeMenu()">◎ Live account readiness</a><a href="#channels" onclick="closeHomeMenu()">⇧ Payment channels</a><a href="#security" onclick="closeHomeMenu()">⬡ Security & audit logs</a>
@@ -156,6 +200,14 @@ body.dark-theme .payment-sandbox{background:#2b2518;border-color:#78632b}body.da
 </section>
 <section class="panel" id="statements"><h2>Receipts & statements</h2><p class="secure-note">Print-ready demo documents reflect only simulated transactions in this app session. They are not bank-issued statements.</p><div class="print-actions"><button onclick="printLatestReceipt()">Print latest receipt</button><button class="secondary" onclick="printStatement()">Print statement</button></div><div id="printStatus" class="status" aria-live="polite">No receipt has been printed yet.</div></section>
 <section class="panel" id="security"><h2>Security & anonymous audit</h2><div id="securityState" class="security-state" role="status">Defensive monitoring active. No external scanning or intrusion attempts are performed.</div><div class="row"><span>Audit records</span><b id="auditCount">0</b></div><div class="row"><span>Last integrity hash</span><b id="lastHash">Pending</b></div><div class="row"><span>Detection assessment</span><b id="detectionAssessment">No findings</b></div><div class="row"><span>Application state</span><b id="appSecurityMode">Active</b></div><button class="secondary" onclick="exportAuditLog()">Export anonymous audit log</button><button class="secondary" onclick="resumeAfterReview()">Resume after security review</button><p class="secure-note">Records use UTC timestamps and SHA-256 hash chaining where Web Crypto is available. Missing timestamps are integrity anomalies. Client-side logs are not tamper-proof; production evidence requires trusted server-side storage and key management. Anonymous means personal identifiers are excluded from these audit records; hosting infrastructure may still process network metadata.</p></section></main><footer>InfiGen · Powered by Infinity Cyber Technologies<br>Live services remain disabled until authorized integration and compliance approval.</footer>
+<aside class="provider-spotlight" id="providerSpotlight" role="status" aria-live="polite" hidden>
+<button class="spot-close" type="button" id="spotClose" aria-label="Dismiss provider spotlight">×</button>
+<div class="eyebrow">Provider discovery · illustrative promotion</div><strong id="spotTitle">Explore financial services</strong><p id="spotCopy">Potential service provider information. Not an InfiGen partner or endorsement.</p>
+<div class="spot-progress"><i id="spotProgress"></i></div></aside>
+<nav class="partner-dock" aria-label="Integrated provider channels">
+<div class="partner-caption">Integrated test channel · not a live payment partner</div>
+<div class="partner-list"><div class="partner-chip"><span class="provider-mark">M</span><span>M-PESA<small>Sandbox connected</small></span></div></div>
+</nav>
 <script>
 (function(){
  const key='infigen-theme';
@@ -213,7 +265,33 @@ body.dark-theme .payment-sandbox{background:#2b2518;border-color:#78632b}body.da
  window.onNativePrintStatus=message=>{const el=$("printStatus");if(el)el.textContent=String(message||"Android print status unavailable.");};
  function printDoc(title,body){
   const safeTitle=esc(title);
-   const html="<!doctype html><html><head><meta charset='utf-8'><title>"+safeTitle+"</title><meta name='viewport' content='width=device-width,initial-scale=1'><style>@page{size:auto;margin:14mm}*{box-sizing:border-box}body{font:14px Arial,sans-serif;padding:8px 12px;color:#111;max-width:760px;margin:0 auto}h1{font-size:21px;margin:0 0 22px;padding-bottom:12px;border-bottom:2px solid #222}p{line-height:1.55;margin:12px 0;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;table-layout:fixed}td,th{padding:9px 7px;border-bottom:1px solid #ccc;text-align:left;overflow-wrap:anywhere}.muted{font-size:11px;color:#555;margin-top:24px;border-top:1px solid #ddd;padding-top:10px}@media print{body{padding:0;max-width:none}}</style></head><body>"+body+"<p class='muted'>InfiGen DEMO DOCUMENT · Not a bank-issued document · "+esc(utc())+"</p></body></html>";
+   const html="<!doctype html><html><head><meta charset='utf-8'><title>"+safeTitle+"</title><meta name='viewport' content='width=device-width,initial-scale=1'><style>@page{size:auto;margin:14mm}*{box-sizing:border-box}body{font:14px Arial,sans-serif;padding:8px 12px;color:#111;max-width:760px;margin:0 auto}h1{font-size:21px;margin:0 0 22px;padding-bottom:12px;border-bottom:2px solid #222}p{line-height:1.55;margin:12px 0;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;table-layout:fixed}td,th{padding:9px 7px;border-bottom:1px solid #ccc;text-align:left;overflow-wrap:anywhere}.muted{font-size:11px;color:#555;margin-top:24px;border-top:1px solid #ddd;padding-top:10px}@media print{body{padding:0;max-width:none}}</style></head><body>"+body+"<p class='muted'>InfiGen DEMO DOCUMENT · Not a bank-issued document · "+esc(utc())+"</p>
+<script>
+(function(){
+ const items=[
+  {title:"Banking services · KCB",copy:"Potential bank provider spotlight. No partnership, account access or service integration is implied."},
+  {title:"Digital finance · Equity",copy:"Illustrative provider discovery only. Equity services are not connected to this InfiGen test app."},
+  {title:"Banking services · Co-operative Bank",copy:"Potential provider information. No affiliation, endorsement or live banking service is claimed."},
+  {title:"Financial services · NCBA",copy:"Illustrative promotion slot. Provider availability and integration would require formal approval."},
+  {title:"Banking services · Absa",copy:"Potential provider spotlight only. This app does not currently connect to Absa services."}
+ ];
+ const card=document.getElementById("providerSpotlight"),title=document.getElementById("spotTitle"),copy=document.getElementById("spotCopy"),close=document.getElementById("spotClose"),progress=document.getElementById("spotProgress");
+ if(!card||!title||!copy||!close)return;
+ let index=0,timeout=null,paused=false;
+ function schedule(){if(timeout)clearTimeout(timeout);timeout=setTimeout(showNext,10000);}
+ function showNext(){
+  if(paused)return;
+  const item=items[index%items.length];index++;
+  title.textContent=item.title;copy.textContent=item.copy;
+  if(progress){progress.style.animation="none";void progress.offsetWidth;progress.style.animation="spotTimer 10s linear forwards";}
+  card.hidden=false;schedule();
+ }
+ close.addEventListener("click",()=>{card.hidden=true;if(timeout)clearTimeout(timeout);schedule();});
+ document.addEventListener("visibilitychange",()=>{if(document.hidden){if(timeout)clearTimeout(timeout);}else if(!card.hidden)schedule();else if(!paused)showNext();});
+ if(!window.matchMedia||!window.matchMedia("(prefers-reduced-motion: reduce)").matches){setTimeout(showNext,1800);}else{setTimeout(showNext,1800);}
+})();
+</script>
+</body></html>";
   if(window.AndroidPrint&&typeof window.AndroidPrint.printDocument==="function"){
    try{
     if(typeof window.AndroidPrint.isAvailable==="function"&&!window.AndroidPrint.isAvailable()){
