@@ -486,6 +486,5 @@ body.dark-theme .mode-option{background:#10243a}
  close.addEventListener("click",()=>{card.hidden=true;if(timeout)clearTimeout(timeout);schedule();});
  document.addEventListener("visibilitychange",()=>{if(document.hidden){if(timeout)clearTimeout(timeout);}else if(!card.hidden)schedule();else if(!paused)showNext();});
  if(!window.matchMedia||!window.matchMedia("(prefers-reduced-motion: reduce)").matches){setTimeout(showNext,1800);}else{setTimeout(showNext,1800);}
-})();
-
+})();</script>
 </body></html>
