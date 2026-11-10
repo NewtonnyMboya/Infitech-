@@ -1,6 +1,9 @@
 name: Deploy InfiGen M-PESA sandbox payment functions
 
 on:
+  push:
+    branches: [ infigen-payment-sandbox ]
+    paths: [ "supabase/functions/**", "supabase/migrations/**", ".github/workflows/supabase-payment-sandbox.yml" ]
   workflow_dispatch:
     inputs:
       confirm_sandbox_only:
@@ -18,8 +21,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: infigen-payment-sandbox
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check payment functions
+        run: |
+          deno check supabase/functions/mpesa-payment-initiate/index.ts
+          deno check supabase/functions/mpesa-payment-callback/index.ts
+
   deploy-sandbox:
-    if: github.ref == 'refs/heads/infigen-payment-sandbox' && inputs.confirm_sandbox_only == 'I understand — sandbox only'
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/infigen-payment-sandbox' && inputs.confirm_sandbox_only == 'I understand — sandbox only'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
