@@ -18,11 +18,13 @@ Deno.serve(async (req: Request) => {
   const stk = (body as any)?.Body?.stkCallback;
   const stkId = typeof stk?.CheckoutRequestID === "string" ? stk.CheckoutRequestID : null;
   const b2c = body as any;
-  const b2cId = typeof b2c?.OriginatorConversationID === "string" ? b2c.OriginatorConversationID : null;
+  const b2cResult = b2c?.Result ?? b2c;
+  const b2cId = typeof b2cResult?.OriginatorConversationID === "string" ? b2cResult.OriginatorConversationID : null;
   const receipt = stkId || b2cId;
   if (!receipt) return reply({ ResultCode: 0, ResultDesc: "Callback received; no matching request identifier" });
 
-  const safePayload = JSON.parse(JSON.stringify(body).slice(0, 12000));
+  const serialized = JSON.stringify(body);
+  const safePayload = serialized.length <= 12000 ? body : { truncated: true, preview: serialized.slice(0, 11000) };
   let query = admin.from("infigen_provider_payment_requests").update({
     status: "callback_received", callback_payload: safePayload,
     callback_received_at: new Date().toISOString(), updated_at: new Date().toISOString(),
