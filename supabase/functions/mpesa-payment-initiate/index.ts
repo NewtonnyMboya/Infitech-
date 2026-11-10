@@ -50,7 +50,7 @@ Deno.serve(async (req: Request) => {
   const idem = req.headers.get("Idempotency-Key") || body.idempotencyKey;
   if (flow !== "collection" && flow !== "payout") return reply({ error: "invalid_flow" }, 400);
   if (!phone) return reply({ error: "invalid_kenyan_phone_number" }, 400);
-  if (!Number.isSafeInteger(amount) || Number(amount) < (flow === "payout" ? 10 : 1) || Number(amount) > 250000)
+  if (typeof amount !== "number" || !Number.isSafeInteger(amount) || amount < (flow === "payout" ? 10 : 1) || amount > 250000)
     return reply({ error: "invalid_amount_kes" }, 400);
   if (typeof idem !== "string" || idem.length < 16 || idem.length > 100)
     return reply({ error: "idempotency_key_required" }, 400);
