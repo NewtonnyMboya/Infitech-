@@ -2,7 +2,7 @@ name: InfiGen side-by-side test APK build
 on:
   workflow_dispatch:
   push:
-    branches: [ infigen-side-by-side-test ]
+    branches: [ infigen-side-by-side-test, infigen-payment-sandbox ]
     paths: [ "android/**", ".github/workflows/android-build.yml" ]
 
 permissions:
