@@ -213,8 +213,27 @@ body.dark-theme .payment-sandbox{background:#2b2518;border-color:#78632b}body.da
  window.onNativePrintStatus=message=>{const el=$("printStatus");if(el)el.textContent=String(message||"Android print status unavailable.");};
  function printDoc(title,body){
   const safeTitle=esc(title);
-  const html="<!doctype html><html><head><meta charset='utf-8'><title>"+safeTitle+"</title><meta name='viewport' content='width=device-width,initial-scale=1'><style>@page{size:auto;margin:14mm}*{box-sizing:border-box}body{font:14px Arial,sans-serif;padding:8px 12px;color:#111;max-width:760px;margin:0 auto}h1{font-size:21px;margin:0 0 22px;padding-bottom:12px;border-bottom:2px solid #222}p{line-height:1.55;margin:12px 0;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;table-layout:fixed}td,th{padding:9px 7px;border-bottom:1px solid #ccc;text-align:left;overflow-wrap:anywhere}.muted{font-size:11px;color:#555;margin-top:24px;border-top:1px solid #ddd;padding-top:10px}@media print{body{padding:0;max-width:none}}</style></head><body>"+body+"<p class='muted'>InfiGen DEMO DOCUMENT · Not a bank-issued document · "+utc()+"</p>
-<script>
+   const html="<!doctype html><html><head><meta charset='utf-8'><title>"+safeTitle+"</title><meta name='viewport' content='width=device-width,initial-scale=1'><style>@page{size:auto;margin:14mm}*{box-sizing:border-box}body{font:14px Arial,sans-serif;padding:8px 12px;color:#111;max-width:760px;margin:0 auto}h1{font-size:21px;margin:0 0 22px;padding-bottom:12px;border-bottom:2px solid #222}p{line-height:1.55;margin:12px 0;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse;table-layout:fixed}td,th{padding:9px 7px;border-bottom:1px solid #ccc;text-align:left;overflow-wrap:anywhere}.muted{font-size:11px;color:#555;margin-top:24px;border-top:1px solid #ddd;padding-top:10px}@media print{body{padding:0;max-width:none}}</style></head><body>"+body+"<p class='muted'>InfiGen DEMO DOCUMENT · Not a bank-issued document · "+esc(utc())+"</p></body></html>";
+  if(window.AndroidPrint&&typeof window.AndroidPrint.printDocument==="function"){
+   try{
+    if(typeof window.AndroidPrint.isAvailable==="function"&&!window.AndroidPrint.isAvailable()){
+     window.onNativePrintStatus("Native Android printing is unavailable in this app build.");
+     return false;
+    }
+    window.onNativePrintStatus("Sending document to Android print service…");
+    window.AndroidPrint.printDocument(title,html);
+    return true;
+   }catch(error){
+    window.onNativePrintStatus("Android print bridge error: "+String(error&&error.message||error));
+    return false;
+   }
+  }
+  const w=window.open("","_blank");
+  if(!w){$("printStatus").textContent="Android print bridge was not detected. Browser print window was also blocked.";return false;}
+  w.document.open();w.document.write(html);w.document.close();w.focus();w.print();
+  $("printStatus").textContent="Native Android print bridge not detected; opened browser printing instead.";
+  return true;
+ }
 (function(){
  const button=document.getElementById('mpesaInitiateButton');
  const status=document.getElementById('mpesaInitiateStatus');
@@ -239,28 +258,6 @@ body.dark-theme .payment-sandbox{background:#2b2518;border-color:#78632b}body.da
   finally{button.disabled=false;}
  });
 })();
-</script>
-</body></html>";
-  if(window.AndroidPrint&&typeof window.AndroidPrint.printDocument==="function"){
-   try{
-    if(typeof window.AndroidPrint.isAvailable==="function"&&!window.AndroidPrint.isAvailable()){
-     window.onNativePrintStatus("Native Android printing is unavailable in this app build.");
-     return false;
-    }
-    window.onNativePrintStatus("Sending document to Android print service…");
-    window.AndroidPrint.printDocument(title,html);
-    return true;
-   }catch(error){
-    window.onNativePrintStatus("Android print bridge error: "+String(error&&error.message||error));
-    return false;
-   }
-  }
-  const w=window.open("","_blank");
-  if(!w){$("printStatus").textContent="Android print bridge was not detected. Browser print window was also blocked.";return false;}
-  w.document.open();w.document.write(html);w.document.close();w.focus();w.print();
-  $("printStatus").textContent="Native Android print bridge not detected; opened browser printing instead.";
-  return true;
- }
  function rows(){return Array.from(document.querySelectorAll("#transactions .transaction")).filter(el=>el.dataset.ref).map(el=>({type:el.dataset.type||"TRANSACTION",amount:Number(el.dataset.amount)||0,ref:el.dataset.ref||"",time:el.dataset.time||""}));}
  window.printLatestReceipt=()=>{const r=rows()[0];if(!r){$("printStatus").textContent="No demo transaction is available to print.";return;}if(printDoc("InfiGen demo receipt","<h1>InfiGen — Transaction receipt</h1><p><b>Reference:</b> "+esc(r.ref)+"</p><p><b>Type:</b> "+esc(r.type)+"</p><p><b>Amount:</b> "+fmt(r.amount)+"</p><p><b>Recorded:</b> "+esc(r.time)+"</p><p><b>Status:</b> SIMULATED — NO MONEY MOVED</p>")){$("printStatus").textContent="Receipt prepared for browser/device printing.";log("RECEIPT_PRINT","POSITIVE","Demo receipt print requested");}};
  window.printStatement=()=>{const rs=rows(),tr=rs.map(r=>"<tr><td>"+esc(r.ref)+"</td><td>"+esc(r.type)+"</td><td>"+fmt(r.amount)+"</td><td>"+esc(r.time)+"</td></tr>").join("");if(printDoc("InfiGen demo statement","<h1>InfiGen — Demo statement</h1><p>Opening demo balance: KSh 10,000.00</p><table><thead><tr><th>Reference</th><th>Type</th><th>Amount</th><th>Time</th></tr></thead><tbody>"+(tr||"<tr><td colspan='4'>No transactions recorded</td></tr>")+"</tbody></table><p><b>Current demo balance:</b> "+esc($("balance").textContent)+"</p><p>All entries are simulated.</p>")){$("printStatus").textContent="Statement prepared for browser/device printing.";log("STATEMENT_PRINT","POSITIVE","Demo statement print requested");}};
