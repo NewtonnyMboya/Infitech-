@@ -44,6 +44,16 @@ body.dark-theme #liveMode:checked~.mode-options label[for=liveMode]{background:#
 .auth-card{background:#fff;border:1px solid #dce5f5;border-radius:15px;padding:17px;margin:15px 0}
 .auth-card h2{font-size:17px;margin:0 0 8px}.auth-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.auth-grid .wide{grid-column:1/-1}.auth-status{font-size:13px;line-height:1.5;margin-top:10px;overflow-wrap:anywhere}.customer-box{display:none;background:#eef5ff;border:1px solid #cbdcf7;border-radius:11px;padding:12px;margin-top:12px;font-size:13px;line-height:1.7;overflow-wrap:anywhere}.auth-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.auth-actions button{margin-top:10px}.auth-actions .wide{grid-column:1/-1}
 body.dark-theme .auth-card{background:#151f30;border-color:#34445c;color:#e5edf9}body.dark-theme .customer-box{background:#172b42;border-color:#345678;color:#e5edf9}
+
+.readiness-tools{margin-top:14px;padding:14px;border:1px solid #cbdcf7;border-radius:12px;background:#f7faff}
+.readiness-tools h3{margin:0 0 8px;font-size:15px}
+.readiness-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.readiness-cell{padding:10px;border:1px solid #dce5f5;border-radius:9px;background:#fff;font-size:12px}
+.readiness-cell b{display:block;margin-top:4px;overflow-wrap:anywhere}
+.readiness-result{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 ui-monospace,monospace;background:#eef3fb;border-radius:9px;padding:10px;margin-top:10px;max-height:260px;overflow:auto}
+body.dark-theme .readiness-tools{background:#172b42;border-color:#345678}
+body.dark-theme .readiness-cell{background:#151f30;border-color:#34445c;color:#e5edf9}
+body.dark-theme .readiness-result{background:#0f1929;color:#e5edf9}
 </style></head><body>
 <header><div class="brand"><div class="mark">∞</div><div>InfiGen<br><small>Bank • Transact • Grow</small></div></div></header>
 <main class="wrap" id="overview"><div class="homebar"><div class="menuwrap"><button class="homebtn" id="homeMenuButton" aria-expanded="false" aria-controls="homeMenu">⌂ Home ▾</button><nav class="menupanel" id="homeMenu" aria-label="Application menu"><a href="#overview" onclick="closeHomeMenu()">⌂ Overview</a><a href="#demo-actions" onclick="closeHomeMenu()">⇄ Transactions</a><a href="#activity" onclick="closeHomeMenu()">▤ Transaction history</a><a href="#statements" onclick="closeHomeMenu()">▧ Receipts & statements</a><a href="#live-readiness" onclick="closeHomeMenu()">◎ Live account readiness</a><a href="#channels" onclick="closeHomeMenu()">⇧ Payment channels</a><a href="#security" onclick="closeHomeMenu()">⬡ Security & audit logs</a>
@@ -98,6 +108,22 @@ body.dark-theme .auth-card{background:#151f30;border-color:#34445c;color:#e5edf9
 <div class="row"><span>Unique account number</span><b>Server-side issuance required</b></div>
 <div class="row"><span>Activation threshold</span><b>KSh 500 · pending live rules</b></div>
 <div class="row"><span>Deposit ceiling</span><b>Provider / legal limits apply</b></div>
+
+<div class="readiness-tools" id="bankingReadinessTools">
+  <h3>Authenticated banking readiness verification</h3>
+  <p class="secure-note">Checks the signed-in Supabase session and reads provider readiness. This is informational only; it cannot initiate payments or enable live transfers.</p>
+  <button type="button" onclick="checkBankingReadiness()" id="readinessCheckButton">Verify session &amp; check readiness</button>
+  <div class="status" id="readinessCheckStatus" role="status" aria-live="polite">Not checked yet.</div>
+  <div class="readiness-grid">
+    <div class="readiness-cell">M-PESA collection<b id="mpesaCollectionStatus">Not checked</b></div>
+    <div class="readiness-cell">M-PESA payout<b id="mpesaPayoutStatus">Not checked</b></div>
+    <div class="readiness-cell">Airtel collection<b id="airtelCollectionStatus">Not checked</b></div>
+    <div class="readiness-cell">Airtel payout<b id="airtelPayoutStatus">Not checked</b></div>
+  </div>
+  <div class="readiness-cell" style="margin-top:8px">Production authorization<b id="productionAuthorizationStatus">Not verified</b></div>
+  <div class="readiness-cell" style="margin-top:8px">Last successful check<b id="readinessCheckedAt">Never</b></div>
+  <pre class="readiness-result" id="readinessResponse" aria-label="Readiness response" hidden></pre>
+</div>
 </section>
 <section class="panel" id="channels"><h2>Live payment channels · reserved</h2>
 <div class="row"><span>M-PESA / Safaricom</span><b>Authorized Daraja setup</b></div>
@@ -245,6 +271,36 @@ body.dark-theme .auth-card{background:#151f30;border-color:#34445c;color:#e5edf9
     box.style.whiteSpace='pre-line';
     status('Authenticated successfully. Account balance and transaction history loaded from Supabase. Demo transactions are server-recorded; no real money moves.');
   }
+
+  window.checkBankingReadiness=async function(){
+    const button=$('readinessCheckButton'),statusBox=$('readinessCheckStatus'),responseBox=$('readinessResponse');
+    const set=(id,value)=>{const el=$(id);if(el)el.textContent=value==null?'Not reported':String(value);};
+    if(!client){statusBox.textContent='Supabase client is unavailable. Reload the app and check the network connection.';return;}
+    if(!currentUser){statusBox.textContent='Sign in through Customer Access before checking readiness.';return;}
+    button.disabled=true;statusBox.textContent='Verifying the current Supabase session…';responseBox.hidden=true;
+    try{
+      const sessionResult=await client.auth.getSession();
+      if(sessionResult.error)throw sessionResult.error;
+      const session=sessionResult.data?.session;
+      if(!session?.access_token||session.user?.id!==currentUser.id)throw new Error('No matching authenticated Supabase session. Sign in again.');
+      statusBox.textContent='Session confirmed. Requesting banking-readiness…';
+      const result=await client.functions.invoke('banking-readiness',{method:'GET'});
+      if(result.error)throw result.error;
+      const data=result.data||{};
+      const providers=data.providers||{},mpesa=providers.mpesa||{},airtel=providers.airtelMoney||{};
+      const state=x=>x?.status||((x?.liveMoneyMovementEnabled===true)?'Enabled':'Blocked / pending');
+      set('mpesaCollectionStatus',state(mpesa.collection));
+      set('mpesaPayoutStatus',state(mpesa.payout));
+      set('airtelCollectionStatus',state(airtel.collection));
+      set('airtelPayoutStatus',state(airtel.payout));
+      set('productionAuthorizationStatus',data.productionAuthorizationStatus||'Not reported');
+      set('readinessCheckedAt',new Date().toISOString());
+      responseBox.textContent=JSON.stringify(data,null,2);responseBox.hidden=false;
+      statusBox.textContent='Authenticated readiness check succeeded. Provider configuration is informational; live money movement remains disabled.';
+    }catch(error){
+      statusBox.textContent='Readiness check failed: '+(error?.message||'Unknown error')+'. No payment was initiated.';
+    }finally{button.disabled=false;}
+  };
   async function activate(user){if(!user)return;setSignedIn(user);try{await refreshAccount();}catch(e){status('Signed in, but account synchronization failed: '+(e.message||'Unknown error')+'. Check that the second SQL migration has been applied.');}}
   function init(){
     if(!window.INFIGEN_SUPABASE_CONFIG||!window.supabase||!window.supabase.createClient){status('Supabase client could not load. Check your internet connection and reload.');return;}
