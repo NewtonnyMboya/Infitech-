@@ -301,7 +301,7 @@ body.dark-theme .payment-sandbox{background:#2b2518;border-color:#78632b}body.da
   function formatTime(value){const d=new Date(value);return Number.isNaN(d.getTime())?'Time unavailable':d.toLocaleString();}
   function renderTransactions(items){
     const root=$('transactions');root.replaceChildren();
-    if(!items.length){root.textContent='No demo transactions yet.';return;}
+    if(!items.length){root.textContent='No server-recorded demo transactions yet. Earlier local-only demo entries are not imported into this authenticated account.';return;}
     for(const t of items){
       const row=document.createElement('div');row.className='transaction';
       row.dataset.type=t.direction==='credit'?'DEPOSIT':(String(t.memo||'').toLowerCase().includes('transfer')?'TRANSFER':'WITHDRAW');
@@ -321,7 +321,7 @@ body.dark-theme .payment-sandbox{background:#2b2518;border-color:#78632b}body.da
     if(account.error)throw account.error;if(!account.data)throw new Error('No demo account was returned for this customer.');
     currentAccount=account.data;window.infigenStatementAccount={holder:currentUser.user_metadata?.full_name||currentUser.email||'Customer',number:currentAccount.id,currency:currentAccount.currency||'KES'};$('balanceLabel').textContent='SERVER-SYNCED DEMO BALANCE';$('balance').textContent=money(currentAccount.balance_minor);
     const tx=await client.from('infigen_transactions').select('id,amount_minor,direction,status,balance_after_minor,created_at,memo')
-      .eq('user_id',currentUser.id).eq('account_id',currentAccount.id).order('created_at',{ascending:false}).limit(100);
+      .eq('user_id',currentUser.id).eq('account_id',currentAccount.id).eq('status','completed').order('created_at',{ascending:false}).limit(100);
     if(tx.error)throw tx.error;renderTransactions(tx.data||[]);
     const name=currentUser.user_metadata?.full_name||currentUser.email||'Customer';
     box.textContent='Customer: '+name+'\nEmail: '+(currentUser.email||'Not supplied')+'\nVerification: Pending provider verification\nAccount: '+currentAccount.id+' · KES · Demo\nLive payments: Disabled';
