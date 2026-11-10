@@ -38,6 +38,8 @@ jobs:
           printf '%s\\n' "$BADGING" | grep -F "sdkVersion:'23'"
           unzip -p "$APK" assets/index.html | grep -F "bankingReadinessTools"
           unzip -p "$APK" assets/index.html | grep -F "client.functions.invoke('banking-readiness',{method:'GET'})"
+          unzip -p "$APK" assets/index.html | grep -F "payment-sandbox"
+          unzip -p "$APK" assets/index.html | grep -F "mpesa-payment-initiate"
           sha256sum "$APK"
           ls -lh "$APK"
       - name: Upload isolated test APK
