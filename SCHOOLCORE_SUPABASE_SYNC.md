@@ -27,6 +27,7 @@ Applied migrations:
    - `school_audit_events`
 2. `schoolcore_sync_identity_outbox_v1` — adds `school_sync_id_map`, `school_sync_outbox`, and the role-checked `school_upsert_student` RPC.
 3. `schoolcore_restrict_tenant_rpc_grants` — restricts tenant creation, membership and helper RPC execution to signed-in users.
+4. `schoolcore_require_confirmed_staff_email` — requires the target staff Auth account to have a confirmed email before a school admin can add it to a tenant.
 
 All 14 SchoolCore tables have RLS enabled. Existing marketplace tables were preserved. Do not blindly run `supabase db push` against the original `202611170001_unified_schoolcore.sql` file: it is the initial draft and conflicts with the existing marketplace schema. Use the applied database state as the reference and reconcile migration history before any CLI deployment.
 
@@ -39,10 +40,10 @@ There is no fixed school name, school code, tenant, administrator email or share
 3. With email confirmation enabled, the administrator opens the confirmation email, confirms the address, returns to SchoolCore and signs in.
 4. The administrator enters the school's name and optional school code/county.
 5. The app calls `create_school(p_name,p_code,p_county)`. The database requires `auth.uid()`, creates the tenant and grants the creator the first `admin` membership.
-6. The administrator adds staff using `add_school_member(p_school,p_email,p_role)`. Staff must first create and confirm their own Supabase Auth account.
+6. The administrator adds staff using `add_school_member(p_school,p_email,p_role)`. The database rejects an Auth account whose email is not yet confirmed.
 7. Users can select only schools where they already have membership. Creating an Auth account alone does not create or join a school.
 
-Allowed staff roles are `bursar`, `accountant`, `teacher`, `exams_officer` and `viewer`; `admin` is reserved for the school administrator. The database checks the caller's admin membership before adding staff. Users cannot self-join an existing tenant through the app.
+Allowed staff roles are `bursar`, `accountant`, `teacher`, `exams_officer` and `viewer`; `admin` is reserved for school administration. The database checks the caller's admin membership before adding staff. Users cannot self-join an existing tenant through the app.
 
 ## Email confirmation and SMTP
 
@@ -67,9 +68,9 @@ The supplied merged APK already loads `assets/supabase-cloud.js` and `assets/sup
 - staff email and role assignment;
 - the original personal finance snapshot controls, kept separate from normalized synchronization.
 
-The client keeps access tokens in JavaScript memory only; users must sign in again after the app/WebView restarts. The patch does not store tokens in localStorage or sessionStorage. Staff must register first, then be added by an administrator.
+The client keeps access tokens in JavaScript memory only; users must sign in again after the app/WebView restarts. The patch does not store tokens in localStorage or sessionStorage. Staff must register and confirm their email first, then be added by an administrator.
 
-The onboarding mock test passes. A two-identity/two-school RLS test was run in a temporary SQL transaction and rolled back: each identity saw one school and one student, and cross-school student reads returned zero. Anonymous `create_school` calls failed with `Authentication required`, and anonymous school reads returned zero. No real signup email was sent, so delivery and actual email confirmation still require a real test mailbox.
+The onboarding mock test passes. A two-identity/two-school RLS test was run in a temporary SQL transaction and rolled back: each identity saw one school and one student, and cross-school student reads returned zero. Anonymous `create_school` calls failed with `Authentication required`, and anonymous school reads returned zero. The database also rejected adding an unconfirmed staff account and accepted a confirmed account. No real signup email was sent, so delivery and actual email confirmation still require a real test mailbox.
 
 ## Important remaining work
 
