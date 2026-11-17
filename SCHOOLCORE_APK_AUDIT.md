@@ -62,7 +62,10 @@ The APK's binary AndroidManifest.xml has not yet been decoded here, so package n
 
 - APK extracted and embedded JS/HTML assets inspected.
 - Finance/academic sync gap confirmed.
-- Existing normalized Supabase schema and RLS foundation is in the repository branch `feat/unified-schoolcore-supabase`.
+- Base school schema migration `schoolcore_unified_schema_v2` was applied to Supabase project `unytieqnfzkmxhifovtn`; all 12 school tables were verified and RLS is enabled.
+- Additive migration `schoolcore_sync_identity_outbox_v1` was applied and verified; it adds a durable local/cloud ID map, offline sync outbox and role-checked student upsert RPC.
+- The two migrations are committed in `feat/unified-schoolcore-supabase`.
+- No authenticated test users or school tenant were provisioned, so end-to-end role-isolation and sync tests remain pending.
 - APK binary is not modified and no replacement APK is claimed.
-- Supabase migration has not been applied; RLS tests and real data migration have not run.
+- APK source assets are embedded in the supplied APK rather than present as editable source files in the repository; integration into the APK still requires controlled asset replacement/repackaging.
 - Android packaging toolchain and manifest decoding remain prerequisites to producing a final installable APK.
