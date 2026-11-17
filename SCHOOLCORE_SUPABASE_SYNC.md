@@ -36,16 +36,20 @@ supabase db push
 
 The migration establishes school-scoped tables: `schools`, `profiles`, `school_members`, one shared `students` table, finance tables (`fee_accounts`, `fee_payments`, `expenses`), academic tables (`academic_terms`, `subjects`, `assessments`, `marks`, `attendance`), and `audit_events`. Foreign keys ensure finance and academic records refer to the same student UUID. Admission numbers and receipts are unique within a school.
 
-## Secure setup
+## Multi-school onboarding and manually managed credentials
 
-1. Link the Supabase CLI to project ref `unytieqnfzkmxhifovtn` and apply the migration above.
-2. Configure Auth email confirmation and allowed redirect URLs for the actual app origins.
-3. Configure the Android build with the project URL above and the supplied publishable key. Keep the key in local build configuration; never embed a service-role key in an APK, browser, or build artifact.
-4. A signed-in user calls `create_school(name, code, county)`; the function creates the school and grants the caller its first admin membership.
-5. Admins add existing Auth users with `add_school_member(school_id,email,role)`.
-6. Test with two separate schools and users. Verify cross-school SELECT/INSERT/UPDATE/DELETE is blocked by RLS before importing real records.
+SchoolCore is a multi-tenant application. There is no hard-coded school name, school code, tenant, administrator email, or shared school password. Every school creates its own tenant during first-run setup.
 
-RLS is enabled on all application tables. Finance roles and academic roles have separate write permissions; authenticated school members share read access to the student identity needed by both modules.
+1. On first launch, show a setup choice: **Create a school** or **Sign in**. Do not preselect or silently create a school.
+2. The school's designated administrator creates or signs in to an individual Supabase Auth account using the school's chosen email and password. Credentials are entered by the school; never hard-code them in the APK or Git repository.
+3. After authentication, the administrator enters the school's name and optional school code/county, then calls `create_school(name, code, county)`. The signed-in caller becomes the first admin for that school.
+4. The admin manually adds staff by email and assigns a least-privilege role using `add_school_member(school_id,email,role)`. Staff must have their own Auth accounts; never share one administrator login among staff.
+5. On subsequent launches, users sign in and select one of the schools they are authorized to access. A user with no membership must not be allowed to read or write that school's records.
+6. Test two separate school tenants and accounts. Verify cross-school SELECT/INSERT/UPDATE/DELETE is blocked by RLS before importing real records.
+
+The existing Supabase publishable key is application configuration, not a school credential. It can be present in a client build with RLS correctly enforced; never use or embed a `service_role` or secret key in the APK, browser, or source repository. Each school's records are scoped by its own school UUID. The same student UUID is shared by the finance and academic modules **within that school**, not across different schools.
+
+RLS is enabled on the school tables. Finance and academic writes are restricted by membership role. The Android client still needs the first-run screens, sign-in flow, school selector, member-management UI, and actual table synchronization; these are not yet present in the supplied APK.
 
 ## Remaining Android integration (not completed by this schema commit)
 
