@@ -8,32 +8,30 @@ This audit is based on the uploaded `schoolcore (1).apk` (1,073,885 bytes), not 
 
 | Asset | Finding |
 |---|---|
-| `assets/android-api.js` | Finance API is backed by the native `AndroidStore` bridge; local finance records include students, payments, expenses, users, settings and audit entries. |
-| `assets/supabase-cloud.js` | Supabase email auth and manual finance JSON snapshot backup/restore only. It uses `finance_snapshots`, which is not part of the proposed normalized schema migration. |
-| `assets/supabase-config.js` | Project URL and publishable key are blank in the supplied APK. |
-| `assets/student-report.html` | Academic workspace is persisted in browser `localStorage` under `aserfg_db_v1`; it contains students, subjects, marks, attendance, grading bands, accounts, history and settings. |
+| `assets/android-api.js` | Finance API is backed by the native AndroidStore bridge; local finance records include students, payments, expenses, users, settings and audit entries. |
+| `assets/supabase-cloud.js` | Original APK had Supabase email auth and manual finance JSON snapshot backup/restore only. |
+| `assets/supabase-config.js` | Project URL and publishable key were blank in the supplied APK. |
+| `assets/student-report.html` | Academic workspace is persisted in browser localStorage under `aserfg_db_v1`; it contains students, subjects, marks, attendance, grading bands, accounts, history and settings. |
 | `assets/app.js` | Finance UI can send a student roster into the academic iframe using `SCHOOLCORE_IMPORT_FINANCE_ROSTER`. |
 | `assets/android-bridge.js` | Small native bridge wrapper used by the WebView app. |
 
 ## Confirmed integration gaps
 
 1. Finance and academic records have independent local stores.
-2. The finance cloud client only uploads/restores the finance JSON snapshot.
+2. The original finance cloud client only uploaded/restored a JSON finance snapshot.
 3. Academic `syncNow()` sets an offline-only status; it does not call Supabase.
 4. The finance-to-academic roster message copies admission number, name, class and stream; it does not establish a shared server-side student UUID.
-5. The proposed normalized database migration has a shared `students` table, but an adapter is still required to map local integer/string IDs to stable server UUIDs and to map the academic workspace's exam/term/grade model to `academic_terms`, `assessments`, `subjects`, `marks` and `attendance`.
+5. The normalized database and offline outbox exist, but a full adapter is still required to map finance and academic records into those tables.
 
 ## Recommended integration sequence
 
-1. Apply and validate the normalized schema migration in the target Supabase project.
-2. Create the school and first admin membership; invite additional Supabase Auth users and assign least-privilege roles.
-3. Add a durable local-to-cloud ID map keyed by school + local record type + local ID. Use deterministic idempotency keys for payments and marks; never deduplicate financial receipts by amount/date alone.
-4. Build one parent WebView Supabase session owner. The academic iframe should request sync through a validated same-origin message bridge; it should not create a second independent auth session or store access tokens in localStorage.
-5. Upsert the shared student identity first by `(school_id, admission_no)`, then use the returned student UUID for finance and academic child records.
-6. Map finance fee totals to `fee_accounts`, payments to `fee_payments`, expenses to `expenses`; map academic terms, exams, subjects, marks and attendance to their normalized tables. Preserve original local IDs in the sync map.
-7. Add an offline outbox, retry/backoff, conflict policy, sync status and reconciliation report. Do not silently overwrite newer server data.
-8. Test with two schools and at least two users per school. Verify RLS isolation, role boundaries, duplicate retry safety, offline/online transitions and restore from backup before any real data migration.
-9. Only after tests pass, enable background/foreground sync and consider Supabase Realtime subscriptions scoped to the selected school.
+1. Complete multi-school onboarding and validate RLS isolation.
+2. Add a durable local-to-cloud ID map keyed by school + local record type + local ID.
+3. Use one parent WebView Supabase session owner; the academic iframe should request sync through a validated same-origin message bridge and must not create a second independent auth session.
+4. Upsert shared student identity first by (school_id, admission_no), then use the returned student UUID for finance and academic child records.
+5. Map fee accounts, payments, expenses, terms, subjects, assessments, marks and attendance into normalized tables.
+6. Add an offline outbox, retry/backoff, conflict policy, sync status and reconciliation report.
+7. Test with at least two schools and users per school before importing real records.
 
 ## Data safety rules
 
@@ -41,8 +39,8 @@ This audit is based on the uploaded `schoolcore (1).apk` (1,073,885 bytes), not 
 - Do not use whole-database snapshot restore as normal synchronization.
 - Do not sync local app login password hashes or local account records into Supabase.
 - Treat student, guardian and academic records as confidential; use least-privilege school membership and RLS.
-- The publishable key is client configuration, not authorization. RLS is the security boundary. Never put a service-role/secret key in the APK or repository.
-- The previously supplied publishable key is intentionally omitted from this repository documentation and from source control.
+- The publishable key is public client configuration, not authorization. Never put a Supabase service-role/secret key in the APK.
+- The keystore password and private key must remain local and must not be committed to GitHub or pasted into chat.
 
 ## Android signing and packaging
 
@@ -52,20 +50,20 @@ A local `jarsigner -verify` check on the uploaded APK reports that the JAR signa
 - Signature: RSA 2048 / SHA-256
 - Certificate: self-signed; no timestamp; certificate validity reported through 2054-04-04.
 
-A self-signed certificate is expected for many Android app signing keys. The missing public trust chain warning from `jarsigner` does not by itself mean the APK signature is corrupt. The original keystore and alias have been supplied by the owner and the earlier certificate comparison matched the APK signer.
+This runtime currently has Java 21 and `jarsigner`, but does not have `apksigner`, `zipalign` or `apktool`. A final Android update must be rebuilt/repackaged, aligned, signed with the matching private key, and verified with Android `apksigner`. Do not treat a JAR-only signature verification as final Android package verification.
 
-This runtime currently has Java 21 and `jarsigner`, but does not have `apksigner`, `zipalign` or `apktool`. A final Android update must be rebuilt/repackaged, aligned, signed with the matching private key, and verified with Android `apksigner` (including the supported v1/v2/v3 schemes). Do not treat a JAR-only signature verification as final Android package verification.
-
-The APK's binary AndroidManifest.xml has not yet been decoded here, so package name, versionCode, minSdkVersion and targetSdkVersion must be extracted before producing an installable update. Preserve the application ID and increment versionCode. Never change the signing key. The keystore password and private key must remain local and must not be committed to GitHub or pasted into chat.
+The APK's binary AndroidManifest.xml has not yet been decoded here, so package name, versionCode, minSdkVersion and targetSdkVersion must be extracted before producing an installable update. Preserve the application ID and increment versionCode. Never change the signing key.
 
 ## Current status
 
 - APK extracted and embedded JS/HTML assets inspected.
-- Finance/academic sync gap confirmed.
-- Base school schema migration `schoolcore_unified_schema_v2` was applied to Supabase project `unytieqnfzkmxhifovtn`; all 12 school tables were verified and RLS is enabled.
-- Additive migration `schoolcore_sync_identity_outbox_v1` was applied and verified; it adds a durable local/cloud ID map, offline sync outbox and role-checked student upsert RPC.
-- The two migrations are committed in `feat/unified-schoolcore-supabase`.
-- No authenticated test users or school tenant were provisioned, so end-to-end role-isolation and sync tests remain pending.
-- APK binary is not modified and no replacement APK is claimed.
-- APK source assets are embedded in the supplied APK rather than present as editable source files in the repository; integration into the APK still requires controlled asset replacement/repackaging.
-- Android packaging toolchain and manifest decoding remain prerequisites to producing a final installable APK.
+- Base school schema migration `schoolcore_unified_schema_v2` was applied to Supabase project `unytieqnfzkmxhifovtn`; 12 school tables were created with RLS enabled.
+- Additive migration `schoolcore_sync_identity_outbox_v1` was applied; it adds local/cloud ID mapping, an offline outbox and a role-checked student upsert RPC.
+- Tenant RPC grant migration `schoolcore_restrict_tenant_rpc_grants` was applied and committed. Anonymous execution of `create_school` was tested and rejected with `Authentication required`.
+- Two temporary Auth identities and two temporary schools were created inside a rolled-back SQL transaction to exercise RLS. Each user saw exactly one school and one student; cross-school student reads returned zero for both users. All test rows were rolled back.
+- A replacement onboarding asset patch was prepared. It adds administrator self-registration, email-confirmation guidance, school creation, school selection and staff-role assignment. It keeps access tokens in memory and leaves the old personal finance snapshot explicitly separate from normalized sync.
+- The Node mock test passed for registration-pending state, sign-in, school creation, creator admin role, staff-role validation and sign-out.
+- Supabase hosted Auth confirmation settings still need dashboard verification. Hosted Supabase projects default to email confirmation enabled, but the connected project tools cannot toggle this setting. See `schoolcore-apk-patch/README.md`.
+- No real signup email was sent because no test mailbox was supplied; email delivery and confirmation remain unverified.
+- The APK binary is not modified and no replacement APK is claimed. The supplied APK does not include a separate Android Studio source project, and Android packaging tools are unavailable in this runtime.
+- Normalized finance/academic record synchronization remains unfinished. The onboarding UI patch does not yet synchronize student, payment, expense, mark or attendance data.
