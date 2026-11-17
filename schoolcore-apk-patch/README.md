@@ -2,7 +2,7 @@
 
 The supplied merged APK already loads `assets/supabase-cloud.js` and `assets/supabase-config.js`. The companion asset patch replaces those two files to add administrator self-registration, email-confirmation guidance, school creation, school selection, staff assignment, and the existing personal finance snapshot controls.
 
-The patch ZIP is delivered in the associated ChatGPT work session. It includes the two replacement assets, a mock onboarding test, and the full replacement instructions.
+The patch ZIP is delivered in the associated ChatGPT work session. It includes the two replacement assets, a mock onboarding test, and the full replacement instructions. The connected patch includes the configured project URL and the project's publishable client key in `assets/supabase-config.js`; that key is public client configuration, not a service-role secret.
 
 ## Flow
 
