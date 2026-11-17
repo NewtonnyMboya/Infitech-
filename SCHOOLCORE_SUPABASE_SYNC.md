@@ -21,6 +21,10 @@ The supplied `schoolcore (1).apk` contains two disconnected persistence paths:
 
 Consequently, the APK is not currently syncing academic records, and the finance/academic registers are not a shared database. The URL and publishable key are now known, but credentials alone do not apply the schema or change the packaged APK.
 
+## Merged APK audit and signing
+
+See [`SCHOOLCORE_APK_AUDIT.md`](SCHOOLCORE_APK_AUDIT.md) for the extracted asset inventory, integration gaps, recommended sync sequence, and Android signing/toolchain findings. The supplied APK signature verifies with the SchoolCore release signer; a final Android package rebuild and `apksigner` verification are still pending.
+
 ## Database model
 
 Apply `supabase/migrations/202611170001_unified_schoolcore.sql` to project ref `unytieqnfzkmxhifovtn` with the Supabase CLI:
