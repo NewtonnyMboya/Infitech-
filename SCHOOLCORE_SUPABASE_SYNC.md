@@ -36,20 +36,23 @@ supabase db push
 
 The migration establishes school-scoped tables: `schools`, `profiles`, `school_members`, one shared `students` table, finance tables (`fee_accounts`, `fee_payments`, `expenses`), academic tables (`academic_terms`, `subjects`, `assessments`, `marks`, `attendance`), and `audit_events`. Foreign keys ensure finance and academic records refer to the same student UUID. Admission numbers and receipts are unique within a school.
 
-## Multi-school onboarding and manually managed credentials
+## Multi-school onboarding with administrator self-registration
 
-SchoolCore is a multi-tenant application. There is no hard-coded school name, school code, tenant, administrator email, or shared school password. Every school creates its own tenant during first-run setup.
+SchoolCore is a multi-tenant application. There is no hard-coded school name, school code, tenant, administrator email, or shared school password. Each school administrator can register directly in the app and create a school tenant without an invitation.
 
-1. On first launch, show a setup choice: **Create a school** or **Sign in**. Do not preselect or silently create a school.
-2. The school's designated administrator creates or signs in to an individual Supabase Auth account using the school's chosen email and password. Credentials are entered by the school; never hard-code them in the APK or Git repository.
-3. After authentication, the administrator enters the school's name and optional school code/county, then calls `create_school(name, code, county)`. The signed-in caller becomes the first admin for that school.
-4. The admin manually adds staff by email and assigns a least-privilege role using `add_school_member(school_id,email,role)`. Staff must have their own Auth accounts; never share one administrator login among staff.
-5. On subsequent launches, users sign in and select one of the schools they are authorized to access. A user with no membership must not be allowed to read or write that school's records.
-6. Test two separate school tenants and accounts. Verify cross-school SELECT/INSERT/UPDATE/DELETE is blocked by RLS before importing real records.
+1. On first launch, show **Create an account** and **Sign in**. Do not preselect or silently create a school.
+2. For self-registration, collect the administrator's name, email, and password through Supabase Auth `signUp`. Never store passwords in application tables, local finance/academic stores, logs, or the Git repository. Show email-confirmation guidance when the Supabase project requires confirmation.
+3. After successful registration and a valid authenticated session, show **Create a school**. Collect the school's name and optional school code/county, then call `create_school(name, code, county)`. The database function requires `auth.uid()`, creates the school tenant, and assigns the signed-in caller its first admin membership.
+4. If the user already has an account, they sign in and can create a new school or select a school they already belong to. Do not create a tenant automatically on sign-up.
+5. The administrator can add staff by their email and assign a least-privilege role using `add_school_member(school_id,email,role)`. The staff member must first register and verify/sign in to their own Auth account; the admin then adds that existing account. Never share one administrator login among staff.
+6. On later launches, users sign in and select only from schools where they have membership. A user with no membership must not be able to read or write that school's records.
+7. Test at least two separate school tenants and separate users. Verify cross-school SELECT/INSERT/UPDATE/DELETE is blocked by RLS before importing real records.
 
-The existing Supabase publishable key is application configuration, not a school credential. It can be present in a client build with RLS correctly enforced; never use or embed a `service_role` or secret key in the APK, browser, or source repository. Each school's records are scoped by its own school UUID. The same student UUID is shared by the finance and academic modules **within that school**, not across different schools.
+The existing Supabase publishable key is application configuration, not a school credential. It can be present in a client build with RLS correctly enforced; never use or embed a `service_role` or secret key in the APK, browser, or source repository. Each school's records are scoped by its own school UUID. The same student UUID is shared by finance and academic modules **within that school**, not across different schools.
 
-RLS is enabled on the school tables. Finance and academic writes are restricted by membership role. The Android client still needs the first-run screens, sign-in flow, school selector, member-management UI, and actual table synchronization; these are not yet present in the supplied APK.
+Registration and tenant creation are distinct steps: creating an Auth account does not create a school. Enable email confirmation and suitable Auth abuse protections/rate limits for public self-registration. Do not expose a client-side path that lets a newly registered user add themselves to an existing school or grant themselves an elevated role. The `create_school` function is authenticated and grants admin only for the new tenant created by that caller.
+
+RLS is enabled on the school tables. Finance and academic writes are restricted by membership role. The Android client still needs the sign-up/sign-in screens, email-confirmation handling, school creation form, school selector, staff-management UI, and actual table synchronization; these are not yet present in the supplied APK.
 
 ## Remaining Android integration (not completed by this schema commit)
 
