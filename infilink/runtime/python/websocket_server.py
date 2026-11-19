@@ -75,9 +75,12 @@ class IILPWebSocketServer:
         origin = headers.get("Origin")
         if origin not in self.allowed_origins:
             raise WebSocketTransportError("origin is not allowed")
-        principal = self.authenticate(headers)
-        if inspect.isawaitable(principal):
-            principal = await principal
+        try:
+            principal = self.authenticate(headers)
+            if inspect.isawaitable(principal):
+                principal = await principal
+        except Exception as exc:
+            raise WebSocketTransportError("authentication failed") from exc
         if not principal:
             raise WebSocketTransportError("authentication failed")
         return principal
@@ -92,9 +95,12 @@ class IILPWebSocketServer:
             target = message.get("body", {}).get("target")
             if not isinstance(target, str) or not target:
                 raise WebSocketTransportError("body.target service name is required")
-            allowed = self.authorize(principal, target, message)
-            if inspect.isawaitable(allowed):
-                allowed = await allowed
+            try:
+                allowed = self.authorize(principal, target, message)
+                if inspect.isawaitable(allowed):
+                    allowed = await allowed
+            except Exception as exc:
+                raise WebSocketTransportError("authorization failed") from exc
             if not allowed:
                 raise WebSocketTransportError("authorization denied")
             result = await self.router.dispatch(target, message)
@@ -114,6 +120,9 @@ class IILPWebSocketServer:
     async def _handler(self, websocket: Any) -> None:
         async with self.semaphore:
             try:
+                if getattr(websocket, "subprotocol", None) != SUBPROTOCOL:
+                    await websocket.close(code=1002, reason="IILP subprotocol required")
+                    return
                 principal = await self._authenticate(websocket)
                 async for frame in websocket:
                     try:
