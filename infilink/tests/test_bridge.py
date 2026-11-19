@@ -11,6 +11,8 @@ class BridgeTests(unittest.TestCase):
         msg = json_to_iilp("echo", {"type": "echo", "body": {"text": "hello"}}, "req-1")
         self.assertEqual(msg["body"]["target"], "echo")
         self.assertEqual(msg["body"]["text"], "hello")
+        injected = json_to_iilp("echo", {"type": "echo", "body": {"target": "admin"}}, "req-2")
+        self.assertEqual(injected["body"]["target"], "echo")
 
     def test_reject_invalid_gateway_payload(self):
         with self.assertRaises(BridgeError):
