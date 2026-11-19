@@ -78,6 +78,8 @@ export class IILPBrowserClient {
   /** Open a raw IILP binary WebSocket. The server must implement this framing profile. */
   openWebSocket({ url, protocols = ["iilp.v1"] } = {}) {
     const target = new URL(url);
+    const offered = Array.isArray(protocols) ? protocols : [protocols];
+    if (!offered.includes("iilp.v1")) throw new TypeError("iilp.v1 WebSocket subprotocol is required");
     const local = ["localhost", "127.0.0.1", "[::1]"].includes(target.hostname);
     if (target.username || target.password || target.search || target.hash ||
         (target.protocol !== "wss:" && !(local && target.protocol === "ws:")))
