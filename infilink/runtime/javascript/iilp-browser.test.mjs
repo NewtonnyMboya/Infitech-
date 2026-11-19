@@ -128,3 +128,11 @@ test("browser WebSocket client rejects a closed socket", async () => {
   await assert.rejects(client.sendWebSocket({ readyState: 3 }, "orders", "order.read", {}),
                        /must be open/);
 });
+
+test("browser WebSocket requires the IILP subprotocol", () => {
+  const client = new IILPBrowserClient({ baseUrl: "https://api.example.test", cryptoProvider });
+  assert.throws(
+    () => client.openWebSocket({ url: "wss://api.example.test/iilp", protocols: ["other"] }),
+    /subprotocol/
+  );
+});
