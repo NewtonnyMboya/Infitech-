@@ -10,7 +10,7 @@
 - **IIL Bridge** — bounded JSON-over-HTTP gateway and allowlisted outbound HTTPS JSON client (starter adapters implemented).
 - **IIL Cloud** — validated Kubernetes Deployment and internal Service manifest generator (starter implemented; deployment execution remains operator-controlled).
 - **IIL Security** — experimental API keys, explicit scopes/RBAC, HMAC request signing with replay checks, and bounded audit events (reference primitives implemented).
-- **IIL Browser** — browser-native IILP/1 codec and bounded HTTPS JSON Bridge client (starter implemented); WebSocket server integration remains planned.
+- **IIL Browser and Live Connectivity** — browser-native IILP/1 codec, HTTPS Bridge client, authenticated TLS WebSocket transport and binary request/response client (experimental starter implemented).
 
 ## Compatibility strategy
 
@@ -26,8 +26,12 @@ Do not reimplement every language, server, browser, operating system or Internet
 - `runtime/python/bridge.py`: HTTP JSON gateway to registered Core services and allowlisted HTTPS JSON client.
 - `runtime/python/cloud.py`: validated Kubernetes manifest builder with digest-pinned images, resource bounds, secret references and hardened container defaults.
 - `runtime/python/security.py`: API key digest store, scopes, explicit RBAC, HMAC request signing/replay protection and in-memory audit sink.
+- `runtime/python/websocket_server.py`: TLS WebSocket listener with strict Origin/subprotocol checks, required authentication and per-message authorization callbacks, bounded binary IILP frames and heartbeat/timeouts.
+- `runtime/javascript/iilp-browser-client.mjs`: browser HTTPS and binary WebSocket request/response clients.
 - `runtime/javascript/`: Node.js IILP codec plus browser-native codec, HTTPS client, WebSocket connection helper and tests.
 - `browser/README.md`: browser setup, CORS and security guidance.
+- `connectivity/README.md`: live WSS server setup, browser usage and deployment requirements.
+- `requirements-websocket.txt`: optional WebSocket server dependency.
 
 Run from the `infilink/` directory:
 
@@ -35,6 +39,7 @@ Run from the `infilink/` directory:
 python3 runtime/python/iilp.py --self-test
 PYTHONPATH=runtime/python:tests python3 -m unittest discover -s tests -p 'test_*.py' -v
 node --test runtime/javascript/*.test.mjs
+python -m pip install -r requirements-websocket.txt
 ```
 
 ## Engineering rules
@@ -49,4 +54,4 @@ node --test runtime/javascript/*.test.mjs
 
 ## Status
 
-Early draft / experimental. The Runtime currently registers trusted in-process Python handlers only; it does not execute arbitrary source code or provide a universal multi-language VM. The DataCore SQLite adapter is a local reference implementation; remote adapters and replication remain unimplemented. The Bridge gateway requires a TLS-terminating reverse proxy and authentication/authorization controls before network exposure. Cloud currently generates manifests only; it does not deploy workloads or configure ingress, network policies, monitoring or secret rotation. Security primitives are process-local reference components: API keys and replay state are not durable or shared, audit events are not tamper-evident, and no identity provider or production KMS integration is supplied. HMAC provides integrity/authentication, not confidentiality. The browser client uses the JSON Bridge, not binary IILP frames over HTTP; the WebSocket helper is client-only until a server profile exists. Do not use this implementation for sensitive or production workloads without a separate security review and production-grade operational controls. IILP is not an Internet standard.
+Early draft / experimental. The Runtime currently registers trusted in-process Python handlers only; it does not execute arbitrary source code or provide a universal multi-language VM. The DataCore SQLite adapter is a local reference implementation; remote adapters and replication remain unimplemented. The Bridge gateway requires a TLS-terminating reverse proxy and authentication/authorization controls before network exposure. Cloud currently generates manifests only; it does not deploy workloads or configure ingress, network policies, monitoring or secret rotation. Security primitives are process-local reference components: API keys and replay state are not durable or shared, audit events are not tamper-evident, and no identity provider or production KMS integration is supplied. HMAC provides integrity/authentication, not confidentiality. The browser HTTP client uses the JSON Bridge; live binary IILP request/response is now available through a separate optional WSS server. That server requires host-supplied authentication and per-message authorization callbacks, TLS certificates and a strict Origin allowlist. Streaming, reconnect/resume and multi-node session coordination are not implemented. Do not use this implementation for sensitive or production workloads without a separate security review and production-grade operational controls. IILP is not an Internet standard.
