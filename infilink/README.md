@@ -5,7 +5,7 @@
 ## Architecture
 
 - **IILP wire format** — bounded, versioned messages with canonical JSON payloads.
-- **IIL Runtime** — language adapters and execution backends (planned).
+- **IIL Runtime** — bounded registry for trusted language adapters (Python reference adapter implemented).
 - **IIL DataCore** — SQLite reference storage, versioned schemas, document CRUD, indexes, backups and integrity checks (reference adapter implemented).
 - **IIL Bridge** — bounded JSON-over-HTTP gateway and allowlisted outbound HTTPS JSON client (starter adapters implemented).
 - **IIL Cloud** — deployable services and hosting adapters (planned).
@@ -18,12 +18,19 @@ Do not reimplement every language, server, browser, operating system or Internet
 
 ## Current implementation
 
-`runtime/python/iilp.py` provides a cross-platform Python reference codec for the IILP/1 frame format. `runtime/python/core.py` provides a bounded service registry and message router; `runtime/python/server.py` provides a TLS-context-required reference server. `runtime/python/datacore.py` provides a SQLite-backed document store with schema validation, indexes, backup and integrity checks. `runtime/python/bridge.py` maps HTTP JSON requests to registered Core services and provides an allowlisted HTTPS JSON client. Node.js has a matching IILP codec under `runtime/javascript/`.
+- `runtime/python/iilp.py`: cross-platform Python reference codec for IILP/1.
+- `runtime/python/core.py`: bounded service registry and message router.
+- `runtime/python/server.py`: TLS-context-required reference server.
+- `runtime/python/runtime.py`: bounded runtime registry for trusted in-process Python handlers, with explicit capabilities, JSON limits and invocation deadlines.
+- `runtime/python/datacore.py`: SQLite-backed document store with schema validation, indexes, backup and integrity checks.
+- `runtime/python/bridge.py`: HTTP JSON gateway to registered Core services and allowlisted HTTPS JSON client.
+- `runtime/javascript/`: matching Node.js IILP codec and tests.
 
 Run:
 
 ```sh
 python3 runtime/python/iilp.py --self-test
+PYTHONPATH=runtime/python:tests python3 -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 ## Engineering rules
@@ -34,7 +41,8 @@ python3 runtime/python/iilp.py --self-test
 4. Make schemas versioned and migrations reversible where possible.
 5. Test conformance across operating systems and language implementations.
 6. Treat IILP as an experimental protocol until reviewed, published, interoperably implemented and assigned any necessary protocol identifiers.
+7. Never treat an invocation timeout as a sandbox; isolate untrusted workloads at the operating-system or container boundary.
 
 ## Status
 
-Early draft / experimental. The DataCore SQLite adapter is a local reference implementation; remote adapters and replication remain unimplemented. The Bridge gateway requires a TLS-terminating reverse proxy and authentication/authorization controls before network exposure. Production security operations remain incomplete. IILP is not an Internet standard and is not yet suitable for production or sensitive data.
+Early draft / experimental. The Runtime currently registers trusted in-process Python handlers only; it does not execute arbitrary source code or provide a universal multi-language VM. The DataCore SQLite adapter is a local reference implementation; remote adapters and replication remain unimplemented. The Bridge gateway requires a TLS-terminating reverse proxy and authentication/authorization controls before network exposure. Production security operations remain incomplete. IILP is not an Internet standard and is not yet suitable for production or sensitive data.
