@@ -249,3 +249,86 @@ class MemoryAuditSink:
     def events(self) -> tuple[AuditEvent, ...]:
         with self._lock:
             return tuple(self._events)
+
+
+class WebSocketSessionStore:
+    """Bounded process-local opaque-cookie sessions for browser WebSockets.
+
+    The application must issue sessions only after authenticating a user with
+    its trusted identity provider. Store only token digests. Set the returned
+    token in a Secure, HttpOnly, SameSite=Strict, Path=/ cookie; never expose
+    it to browser JavaScript. This store is process-local and not a production
+    substitute for a durable/shared session service.
+    """
+    COOKIE_NAME = "__Host-infilink_session"
+    _TOKEN = re.compile(r"^[A-Za-z0-9_-]{43}$")
+
+    def __init__(self, max_sessions: int = 10_000,
+                 clock: Callable[[], float] = time.time) -> None:
+        if not 1 <= max_sessions <= 100_000:
+            raise ValueError("max_sessions must be between 1 and 100000")
+        self._max_sessions, self._clock = max_sessions, clock
+        self._sessions: dict[bytes, tuple[Principal, float]] = {}
+        self._lock = threading.RLock()
+
+    def _purge_expired(self, now: float) -> None:
+        expired = [digest for digest, (_, expires) in self._sessions.items()
+                   if now >= expires]
+        for digest in expired:
+            self._sessions.pop(digest, None)
+
+    def issue(self, principal: Principal, ttl_seconds: int = 3600) -> tuple[str, float]:
+        if not isinstance(principal, Principal):
+            raise ValueError("an authenticated Principal is required")
+        if not isinstance(ttl_seconds, int) or not 1 <= ttl_seconds <= 86_400:
+            raise ValueError("ttl_seconds must be between 1 second and 1 day")
+        token = secrets.token_urlsafe(32)
+        digest = hashlib.sha256(token.encode("ascii")).digest()
+        expires = min(self._clock() + ttl_seconds, principal.expires_at)
+        if expires <= self._clock():
+            raise SecurityError("principal has expired")
+        with self._lock:
+            self._purge_expired(self._clock())
+            if len(self._sessions) >= self._max_sessions:
+                raise SecurityError("session store capacity reached")
+            self._sessions[digest] = (principal, expires)
+        return token, expires
+
+    def authenticate(self, headers: Any) -> Principal | None:
+        """Authenticate a WebSocket handshake from its Cookie header."""
+        if headers is None:
+            return None
+        cookie_header = headers.get("Cookie")
+        if not isinstance(cookie_header, str) or not cookie_header or len(cookie_header) > 8192:
+            return None
+        from http.cookies import CookieError, SimpleCookie
+        cookies = SimpleCookie()
+        try:
+            cookies.load(cookie_header)
+        except (CookieError, TypeError, ValueError):
+            return None
+        morsel = cookies.get(self.COOKIE_NAME)
+        if morsel is None:
+            return None
+        token = morsel.value
+        if not isinstance(token, str) or not self._TOKEN.fullmatch(token):
+            return None
+        digest = hashlib.sha256(token.encode("ascii")).digest()
+        now = self._clock()
+        with self._lock:
+            self._purge_expired(now)
+            record = self._sessions.get(digest)
+            if record is None:
+                return None
+            principal, expires = record
+            if now >= expires:
+                self._sessions.pop(digest, None)
+                return None
+            return principal
+
+    def revoke(self, token: str) -> bool:
+        if not isinstance(token, str) or not self._TOKEN.fullmatch(token):
+            return False
+        digest = hashlib.sha256(token.encode("ascii")).digest()
+        with self._lock:
+            return self._sessions.pop(digest, None) is not None
