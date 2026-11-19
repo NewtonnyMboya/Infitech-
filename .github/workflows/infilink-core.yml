@@ -1,0 +1,41 @@
+name: INFILINK Core
+on:
+  push:
+    branches: [main, "feat/infilink-iilp-foundation"]
+    paths: ["infilink/**", ".github/workflows/infilink-core.yml"]
+  pull_request:
+    paths: ["infilink/**", ".github/workflows/infilink-core.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.12", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Run Python protocol and core tests
+        shell: bash
+        run: |
+          export PYTHONPATH="$GITHUB_WORKSPACE/infilink/runtime/python:$GITHUB_WORKSPACE/infilink/tests"
+          python infiltrink/runtime/python/iilp.py --self-test
+          python -m unittest discover -s infiltrink/tests -p 'test_*.py' -v
+
+  javascript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run JavaScript protocol tests
+        run: node --test infiltrink/runtime/javascript/iilp.test.mjs
