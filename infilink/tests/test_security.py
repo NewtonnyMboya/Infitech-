@@ -1,6 +1,7 @@
 import unittest
 
-from security import (APIKeyStore, Authorizer, MemoryAuditSink, RequestSigner, SecurityError,\n                      Principal, WebSocketSessionStore)
+from security import (APIKeyStore, Authorizer, MemoryAuditSink, RequestSigner, SecurityError,
+                      Principal, WebSocketSessionStore)
 
 
 class Clock:
