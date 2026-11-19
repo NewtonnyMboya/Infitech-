@@ -38,6 +38,7 @@ class IILPWebSocketServer:
         *,
         allowed_origins: set[str],
         authenticate: Callable[[Any], Any],
+        authorize: Callable[[Any, str, dict[str, Any]], Any],
         max_connections: int = 100,
         idle_timeout: float = 30.0,
     ) -> None:
@@ -53,14 +54,15 @@ class IILPWebSocketServer:
                 parsed.username or parsed.password):
                 raise ValueError("allowed origins must be exact HTTPS origins")
             normalized.add(f"https://{parsed.netloc.lower()}")
-        if not callable(authenticate):
-            raise ValueError("an authentication callback is mandatory")
+        if not callable(authenticate) or not callable(authorize):
+            raise ValueError("authentication and authorization callbacks are mandatory")
         if not 1 <= max_connections <= 10_000 or not 0 < idle_timeout <= 300:
             raise ValueError("invalid connection or idle timeout limit")
         self.router = router
         self.ssl_context = ssl_context
         self.allowed_origins = frozenset(normalized)
         self.authenticate = authenticate
+        self.authorize = authorize
         self.semaphore = asyncio.Semaphore(max_connections)
         self.idle_timeout = idle_timeout
         self._server = None
@@ -90,7 +92,11 @@ class IILPWebSocketServer:
             target = message.get("body", {}).get("target")
             if not isinstance(target, str) or not target:
                 raise WebSocketTransportError("body.target service name is required")
-            # Principal is authenticated at connection scope; handlers must apply authorization.
+            allowed = self.authorize(principal, target, message)
+            if inspect.isawaitable(allowed):
+                allowed = await allowed
+            if not allowed:
+                raise WebSocketTransportError("authorization denied")
             result = await self.router.dispatch(target, message)
             response = {
                 "type": "response",
