@@ -35,7 +35,7 @@ def json_to_iilp(service: str, payload: Any, message_id: str) -> dict[str, Any]:
     message = {
         "type": payload.get("type"),
         "id": message_id,
-        "body": {"target": service, **payload.get("body", {})}
+        "body": {**payload.get("body", {}), "target": service}
         if isinstance(payload.get("body"), dict) else None,
     }
     if message["body"] is None:
