@@ -23,7 +23,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - name: Run Python protocol, Core, Runtime, DataCore, Bridge, Cloud and Security tests
+      - name: Install optional WebSocket server dependency
+        run: python -m pip install -r infilink/requirements-websocket.txt
+      - name: Run Python protocol, Core, Runtime, DataCore, Bridge, Cloud, Security and WebSocket tests
         shell: bash
         run: |
           export PYTHONPATH="$GITHUB_WORKSPACE/infilink/runtime/python:$GITHUB_WORKSPACE/infilink/tests"
