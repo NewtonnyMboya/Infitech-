@@ -8,7 +8,7 @@
 - **IIL Runtime** — bounded registry for trusted language adapters (Python reference adapter implemented).
 - **IIL DataCore** — SQLite reference storage, versioned schemas, document CRUD, indexes, backups and integrity checks (reference adapter implemented).
 - **IIL Bridge** — bounded JSON-over-HTTP gateway and allowlisted outbound HTTPS JSON client (starter adapters implemented).
-- **IIL Cloud** — deployable services and hosting adapters (planned).
+- **IIL Cloud** — validated Kubernetes Deployment and internal Service manifest generator (starter implemented; deployment execution remains operator-controlled).
 - **IIL Security** — TLS/QUIC transport profiles, identity, authorization, audit and key management (planned).
 - **IIL Browser** — standards-based web integration; browsers remain compatible through HTTPS, WebSocket and Web APIs (planned).
 
@@ -24,6 +24,7 @@ Do not reimplement every language, server, browser, operating system or Internet
 - `runtime/python/runtime.py`: bounded runtime registry for trusted in-process Python handlers, with explicit capabilities, JSON limits and invocation deadlines.
 - `runtime/python/datacore.py`: SQLite-backed document store with schema validation, indexes, backup and integrity checks.
 - `runtime/python/bridge.py`: HTTP JSON gateway to registered Core services and allowlisted HTTPS JSON client.
+- `runtime/python/cloud.py`: validated Kubernetes manifest builder with digest-pinned images, resource bounds, secret references and hardened container defaults.
 - `runtime/javascript/`: matching Node.js IILP codec and tests.
 
 Run:
@@ -45,4 +46,4 @@ PYTHONPATH=runtime/python:tests python3 -m unittest discover -s tests -p 'test_*
 
 ## Status
 
-Early draft / experimental. The Runtime currently registers trusted in-process Python handlers only; it does not execute arbitrary source code or provide a universal multi-language VM. The DataCore SQLite adapter is a local reference implementation; remote adapters and replication remain unimplemented. The Bridge gateway requires a TLS-terminating reverse proxy and authentication/authorization controls before network exposure. Production security operations remain incomplete. IILP is not an Internet standard and is not yet suitable for production or sensitive data.
+Early draft / experimental. The Runtime currently registers trusted in-process Python handlers only; it does not execute arbitrary source code or provide a universal multi-language VM. The DataCore SQLite adapter is a local reference implementation; remote adapters and replication remain unimplemented. The Bridge gateway requires a TLS-terminating reverse proxy and authentication/authorization controls before network exposure. Cloud currently generates manifests only; it does not deploy workloads or configure ingress, network policies, monitoring or secret rotation. Production security operations remain incomplete. IILP is not an Internet standard and is not yet suitable for production or sensitive data.
