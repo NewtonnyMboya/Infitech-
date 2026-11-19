@@ -27,8 +27,8 @@ jobs:
         shell: bash
         run: |
           export PYTHONPATH="$GITHUB_WORKSPACE/infilink/runtime/python:$GITHUB_WORKSPACE/infilink/tests"
-          python infiltrink/runtime/python/iilp.py --self-test
-          python -m unittest discover -s infiltrink/tests -p 'test_*.py' -v
+          python infilink/runtime/python/iilp.py --self-test
+          python -m unittest discover -s infilink/tests -p 'test_*.py' -v
 
   javascript:
     runs-on: ubuntu-latest
@@ -38,4 +38,4 @@ jobs:
         with:
           node-version: 20
       - name: Run JavaScript protocol tests
-        run: node --test infiltrink/runtime/javascript/iilp.test.mjs
+        run: node --test infilink/runtime/javascript/iilp.test.mjs
