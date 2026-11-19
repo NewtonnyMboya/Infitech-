@@ -1,4 +1,4 @@
-name: INFILINK Core and Runtime
+name: INFILINK Core, Runtime and Browser
 on:
   push:
     branches: [main, "feat/infilink-iilp-foundation"]
@@ -37,5 +37,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Run JavaScript protocol tests
-        run: node --test infilink/runtime/javascript/iilp.test.mjs
+      - name: Run Node.js and browser JavaScript tests
+        run: node --test infilink/runtime/javascript/*.test.mjs
