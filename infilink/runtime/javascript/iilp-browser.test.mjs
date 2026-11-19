@@ -90,3 +90,41 @@ test("browser client restricts insecure origins and malformed inputs", async () 
   await assert.rejects(client.send("../admin", "order.read", {}), /service name/);
   await assert.rejects(client.send("orders", "order.read", []), /JSON object/);
 });
+
+class FakeSocket {
+  constructor() { this.readyState = 1; this.listeners = new Map(); this.sent = []; }
+  addEventListener(name, fn) {
+    if (!this.listeners.has(name)) this.listeners.set(name, new Set());
+    this.listeners.get(name).add(fn);
+  }
+  removeEventListener(name, fn) { this.listeners.get(name)?.delete(fn); }
+  send(frame) {
+    this.sent.push(frame);
+    const request = decode(frame);
+    const reply = encode({
+      type: "response", id: request.id,
+      body: { ok: true, result: { received: request.body.value, target: request.body.target } }
+    });
+    queueMicrotask(() => {
+      for (const fn of this.listeners.get("message") || []) fn({ data: reply.buffer.slice(reply.byteOffset, reply.byteOffset + reply.byteLength) });
+    });
+  }
+}
+
+test("browser WebSocket client sends binary IILP and resolves matching response", async () => {
+  const client = new IILPBrowserClient({
+    baseUrl: "https://api.example.test", cryptoProvider
+  });
+  const socket = new FakeSocket();
+  const result = await client.sendWebSocket(socket, "orders", "order.read", { value: 42 });
+  assert.deepEqual(result, { received: 42, target: "orders" });
+  assert.deepEqual(decode(socket.sent[0]).body, { value: 42, target: "orders" });
+});
+
+test("browser WebSocket client rejects a closed socket", async () => {
+  const client = new IILPBrowserClient({
+    baseUrl: "https://api.example.test", cryptoProvider
+  });
+  await assert.rejects(client.sendWebSocket({ readyState: 3 }, "orders", "order.read", {}),
+                       /must be open/);
+});
