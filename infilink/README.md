@@ -9,7 +9,7 @@
 - **IIL DataCore** — SQLite reference storage, versioned schemas, document CRUD, indexes, backups and integrity checks (reference adapter implemented).
 - **IIL Bridge** — bounded JSON-over-HTTP gateway and allowlisted outbound HTTPS JSON client (starter adapters implemented).
 - **IIL Cloud** — validated Kubernetes Deployment and internal Service manifest generator (starter implemented; deployment execution remains operator-controlled).
-- **IIL Security** — experimental API keys, explicit scopes/RBAC, HMAC request signing with replay checks, and bounded audit events (reference primitives implemented).
+- **IIL Security** — experimental API keys, explicit scopes/RBAC, HMAC request signing with replay checks, bounded audit events and opaque browser WebSocket sessions (process-local reference implementation).
 - **IIL Browser and Live Connectivity** — browser-native IILP/1 codec, HTTPS Bridge client, authenticated TLS WebSocket transport and binary request/response client (experimental starter implemented).
 
 ## Compatibility strategy
@@ -25,7 +25,7 @@ Do not reimplement every language, server, browser, operating system or Internet
 - `runtime/python/datacore.py`: SQLite-backed document store with schema validation, indexes, backup and integrity checks.
 - `runtime/python/bridge.py`: HTTP JSON gateway to registered Core services and allowlisted HTTPS JSON client.
 - `runtime/python/cloud.py`: validated Kubernetes manifest builder with digest-pinned images, resource bounds, secret references and hardened container defaults.
-- `runtime/python/security.py`: API key digest store, scopes, explicit RBAC, HMAC request signing/replay protection and in-memory audit sink.
+- `runtime/python/security.py`: API key digest store, scopes, explicit RBAC, HMAC request signing/replay protection, in-memory audit sink and bounded opaque-cookie WebSocket session store.
 - `runtime/python/websocket_server.py`: TLS WebSocket listener with strict Origin/subprotocol checks, required authentication and per-message authorization callbacks, bounded binary IILP frames and heartbeat/timeouts.
 - `runtime/javascript/iilp-browser-client.mjs`: browser HTTPS and binary WebSocket request/response clients.
 - `runtime/javascript/`: Node.js IILP codec plus browser-native codec, HTTPS client, WebSocket connection helper and tests.
@@ -42,6 +42,29 @@ node --test runtime/javascript/*.test.mjs
 python -m pip install -r requirements-websocket.txt
 ```
 
+### Browser WebSocket session authentication
+
+After authenticating a user with a trusted identity provider or server-side login flow, create a `Principal` and issue an opaque session token:
+
+```python
+from security import WebSocketSessionStore
+
+sessions = WebSocketSessionStore()
+# principal must come from a trusted server-side identity flow
+token, expires_at = sessions.issue(principal, ttl_seconds=1800)
+
+# Set this from the HTTPS login response; do not expose token to JavaScript:
+# Set-Cookie: __Host-infilink_session=<token>; Path=/; Secure; HttpOnly; SameSite=Strict
+
+transport = IILPWebSocketServer(
+    router, tls_context,
+    allowed_origins={"https://app.example.com"},
+    authenticate=sessions.authenticate,
+    authorize=authorize_request,
+)
+```
+
+The `__Host-` cookie must be issued over HTTPS with `Path=/`, `Secure`, no `Domain`, and `HttpOnly`; `SameSite=Strict` is the conservative default. The application must also implement login/logout, session rotation, CSRF protections for state-changing HTTP endpoints, and identity-provider validation. Revoke a session with `sessions.revoke(token)` at logout. The reference store is process-local, so sessions do not survive restart and are not shared across workers; production deployments need a durable, shared session backend, key rotation, rate limiting and monitoring. Never accept roles or scopes supplied by the browser.
 ## Engineering rules
 
 1. No unbounded "infinite loop": background reconciliation must be bounded, observable, cancellable and rate-limited.
