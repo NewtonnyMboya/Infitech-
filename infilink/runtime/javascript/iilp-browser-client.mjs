@@ -76,7 +76,7 @@ export class IILPBrowserClient {
   }
 
   /** Open a raw IILP binary WebSocket. The server must implement this framing profile. */
-  openWebSocket({ url, protocols } = {}) {
+  openWebSocket({ url, protocols = ["iilp.v1"] } = {}) {
     const target = new URL(url);
     const local = ["localhost", "127.0.0.1", "[::1]"].includes(target.hostname);
     if (target.username || target.password || target.search || target.hash ||
@@ -86,6 +86,39 @@ export class IILPBrowserClient {
     const socket = new globalThis.WebSocket(target, protocols);
     socket.binaryType = "arraybuffer";
     return socket;
+  }
+
+  async sendWebSocket(socket, service, type, body, timeoutMs = this.timeoutMs) {
+    if (!socket || socket.readyState !== 1 || typeof socket.send !== "function")
+      throw new Error("WebSocket must be open before sending");
+    if (typeof service !== "string" || !SERVICE.test(service)) throw new TypeError("invalid service name");
+    if (typeof type !== "string" || !MESSAGE_TYPE.test(type)) throw new TypeError("invalid message type");
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw new TypeError("body must be a JSON object");
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 120_000) throw new RangeError("timeoutMs must be 100..120000");
+    const id = makeId(this.cryptoProvider);
+    const frame = encode({ type, id, body: { ...body, target: service } });
+    return await new Promise((resolve, reject) => {
+      const cleanup = () => { clearTimeout(timer); socket.removeEventListener("message", onMessage); socket.removeEventListener("close", onClose); socket.removeEventListener("error", onError); };
+      const timer = setTimeout(() => { cleanup(); reject(new Error("WebSocket request timed out")); }, timeoutMs);
+      const onClose = () => { cleanup(); reject(new Error("WebSocket closed before response")); };
+      const onError = () => { cleanup(); reject(new Error("WebSocket transport error")); };
+      const onMessage = async event => {
+        try {
+          let data = event.data;
+          if (typeof Blob !== "undefined" && data instanceof Blob) data = await data.arrayBuffer();
+          if (!(data instanceof ArrayBuffer) && !ArrayBuffer.isView(data)) return;
+          const response = decode(data);
+          if (response.id !== id) return;
+          cleanup();
+          if (response.type !== "response" || !response.body || response.body.ok !== true) reject(new Error(response.body?.error || "IILP WebSocket request failed"));
+          else resolve(response.body.result);
+        } catch (error) { cleanup(); reject(error); }
+      };
+      socket.addEventListener("message", onMessage);
+      socket.addEventListener("close", onClose, { once: true });
+      socket.addEventListener("error", onError, { once: true });
+      try { socket.send(frame); } catch (error) { cleanup(); reject(error); }
+    });
   }
 
   encodeFrame(message) { return encode(message); }
