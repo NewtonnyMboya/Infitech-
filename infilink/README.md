@@ -26,6 +26,7 @@ Do not reimplement every language, server, browser, operating system or Internet
 - `runtime/python/bridge.py`: HTTP JSON gateway to registered Core services and allowlisted HTTPS JSON client.
 - `runtime/python/cloud.py`: validated Kubernetes manifest builder with digest-pinned images, resource bounds, secret references and hardened container defaults.
 - `runtime/python/security.py`: API key digest store, scopes, explicit RBAC, HMAC request signing/replay protection, in-memory audit sink and bounded opaque-cookie WebSocket session store.
+- `runtime/python/keycloak_oidc.py`: optional Keycloak OIDC access-token verifier using PyJWT/JWKS, issuer/audience/authorized-party validation and explicit role-to-scope mapping.
 - `runtime/python/websocket_server.py`: TLS WebSocket listener with strict Origin/subprotocol checks, required authentication and per-message authorization callbacks, bounded binary IILP frames and heartbeat/timeouts.
 - `runtime/javascript/iilp-browser-client.mjs`: browser HTTPS and binary WebSocket request/response clients.
 - `runtime/javascript/`: Node.js IILP codec plus browser-native codec, HTTPS client, WebSocket connection helper and tests.
@@ -41,6 +42,39 @@ PYTHONPATH=runtime/python:tests python3 -m unittest discover -s tests -p 'test_*
 node --test runtime/javascript/*.test.mjs
 python -m pip install -r requirements-websocket.txt
 ```
+
+### Keycloak OIDC access-token validation
+
+Install the optional verifier dependency from `infilink/`:
+
+```sh
+python -m pip install -r requirements-oidc.txt
+```
+
+Configure the exact Keycloak realm issuer, API audience, confidential/public client ID as appropriate for the token's `azp`, and realm JWKS endpoint. The audience must be present in the access token; configure a Keycloak audience mapper if needed. Map only approved Keycloak realm/client roles to INFILINK permissions:
+
+```python
+from keycloak_oidc import KeycloakOIDCConfig, KeycloakOIDCVerifier
+
+config = KeycloakOIDCConfig(
+    issuer="https://id.example.com/realms/infilink",
+    audience="infilink-api",
+    client_id="infilink-web",
+    jwks_url="https://id.example.com/realms/infilink/protocol/openid-connect/certs",
+    role_scope_map={
+        "infilink-user": frozenset({"profile.read", "ws.connect"}),
+        "infilink-operator": frozenset({"profile.read", "ws.connect", "deploy.read"}),
+    },
+)
+verifier = KeycloakOIDCVerifier(config)
+principal = verifier.verify_access_token(access_token)
+# Only after this succeeds, issue the INFILINK opaque session:
+token, expires_at = sessions.issue(principal, ttl_seconds=1800)
+```
+
+The verifier pins RS256, validates the JWT signature through Keycloak's JWKS, and checks issuer, audience, expiry, issued-at, subject and authorized party (`azp`). Unknown Keycloak roles grant no INFILINK permissions. Keep the JWKS endpoint and issuer on trusted HTTPS origins. Do not accept ID tokens as API access tokens, do not log tokens, and do not place tokens in URLs or browser storage.
+
+This is the token-validation adapter only. The browser Authorization Code + PKCE redirect/callback, state and nonce lifecycle, code exchange, CSRF defenses, logout/revocation propagation, durable shared session backend, and production key/cache operations are not implemented yet. The adapter's unit tests mock the JWT/JWKS boundary; a live Keycloak realm integration test is still required before deployment.
 
 ### Browser WebSocket session authentication
 
