@@ -18,7 +18,7 @@ Do not reimplement every language, server, browser, operating system or Internet
 
 ## Current implementation
 
-`runtime/python/iilp.py` provides a cross-platform Python reference codec for the IILP/1 frame format. It uses only the Python standard library and includes a self-test.
+`runtime/python/iilp.py` provides a cross-platform Python reference codec for the IILP/1 frame format. `runtime/python/core.py` provides a bounded service registry and message router; `runtime/python/server.py` provides a TLS-context-required reference server. `runtime/python/datacore.py` provides a SQLite-backed document store with schema validation, indexes, backup and integrity checks. Node.js has a matching IILP codec under `runtime/javascript/`.
 
 Run:
 
@@ -37,4 +37,4 @@ python3 runtime/python/iilp.py --self-test
 
 ## Status
 
-Early draft / experimental. Not an Internet standard and not yet suitable for production or sensitive data.
+Early draft / experimental. The DataCore SQLite adapter is a local reference implementation; remote adapters, replication and production security operations remain unimplemented. IILP is not an Internet standard and is not yet suitable for production or sensitive data.
