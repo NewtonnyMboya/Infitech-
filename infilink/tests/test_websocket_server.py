@@ -11,6 +11,7 @@ class FakeWebSocket:
     def __init__(self, origin="https://app.example.test"):
         self.request = SimpleNamespace(headers={"Origin": origin, "Cookie": "session=opaque"})
         self.closed = None
+        self.subprotocol = "iilp.v1"
         self.sent = []
     async def close(self, code=1000, reason=""):
         self.closed = (code, reason)
