@@ -50,7 +50,7 @@ class IILPWebSocketServer:
         for origin in allowed_origins:
             parsed = urlsplit(origin)
             if (parsed.scheme != "https" or not parsed.hostname or
-                parsed.path not in ("",) or parsed.query or parsed.fragment or
+                parsed.path not in ("", "/") or parsed.query or parsed.fragment or
                 parsed.username or parsed.password):
                 raise ValueError("allowed origins must be exact HTTPS origins")
             normalized.add(f"https://{parsed.netloc.lower()}")
@@ -86,12 +86,14 @@ class IILPWebSocketServer:
         return principal
 
     async def _dispatch_frame(self, frame: bytes, principal: Any) -> bytes:
+        request_id = "request-error"
         if not isinstance(frame, (bytes, bytearray, memoryview)):
             raise WebSocketTransportError("only binary IILP frames are accepted")
         if len(frame) > MAX_FRAME_BYTES:
             raise WebSocketTransportError("frame exceeds configured limit")
         try:
             message = decode_frame(bytes(frame))
+            request_id = message["id"]
             target = message.get("body", {}).get("target")
             if not isinstance(target, str) or not target:
                 raise WebSocketTransportError("body.target service name is required")
@@ -112,7 +114,7 @@ class IILPWebSocketServer:
         except (IILPError, CoreError, WebSocketTransportError) as exc:
             response = {
                 "type": "error",
-                "id": "request-error",
+                "id": request_id,
                 "body": {"ok": False, "error": type(exc).__name__},
             }
         return encode(response)
