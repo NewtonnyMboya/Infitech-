@@ -1,0 +1,43 @@
+name: INFILINK Core, Runtime and Browser
+on:
+  push:
+    branches: [main, "feat/infilink-iilp-foundation"]
+    paths: ["infilink/**", ".github/workflows/infilink-core.yml"]
+  pull_request:
+    paths: ["infilink/**", ".github/workflows/infilink-core.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.12", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install optional WebSocket server dependency
+        run: python -m pip install -r infilink/requirements-websocket.txt
+      - name: Run Python protocol, Core, Runtime, DataCore, Bridge, Cloud, Security and WebSocket tests
+        shell: bash
+        run: |
+          export PYTHONPATH="$GITHUB_WORKSPACE/infilink/runtime/python:$GITHUB_WORKSPACE/infilink/tests"
+          python infilink/runtime/python/iilp.py --self-test
+          python -m unittest discover -s infilink/tests -p 'test_*.py' -v
+
+  javascript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run Node.js and browser JavaScript tests
+        run: node --test infilink/runtime/javascript/*.test.mjs
