@@ -6,8 +6,8 @@
 
 - **IILP wire format** — bounded, versioned messages with canonical JSON payloads.
 - **IIL Runtime** — language adapters and execution backends (planned).
-- **IIL DataCore** — storage connectors, schemas, indexes, replication and retrieval (planned).
-- **IIL Bridge** — protocol, markup, language and API adapters (planned).
+- **IIL DataCore** — SQLite reference storage, versioned schemas, document CRUD, indexes, backups and integrity checks (reference adapter implemented).
+- **IIL Bridge** — bounded JSON-over-HTTP gateway and allowlisted outbound HTTPS JSON client (starter adapters implemented).
 - **IIL Cloud** — deployable services and hosting adapters (planned).
 - **IIL Security** — TLS/QUIC transport profiles, identity, authorization, audit and key management (planned).
 - **IIL Browser** — standards-based web integration; browsers remain compatible through HTTPS, WebSocket and Web APIs (planned).
@@ -18,7 +18,7 @@ Do not reimplement every language, server, browser, operating system or Internet
 
 ## Current implementation
 
-`runtime/python/iilp.py` provides a cross-platform Python reference codec for the IILP/1 frame format. `runtime/python/core.py` provides a bounded service registry and message router; `runtime/python/server.py` provides a TLS-context-required reference server. `runtime/python/datacore.py` provides a SQLite-backed document store with schema validation, indexes, backup and integrity checks. Node.js has a matching IILP codec under `runtime/javascript/`.
+`runtime/python/iilp.py` provides a cross-platform Python reference codec for the IILP/1 frame format. `runtime/python/core.py` provides a bounded service registry and message router; `runtime/python/server.py` provides a TLS-context-required reference server. `runtime/python/datacore.py` provides a SQLite-backed document store with schema validation, indexes, backup and integrity checks. `runtime/python/bridge.py` maps HTTP JSON requests to registered Core services and provides an allowlisted HTTPS JSON client. Node.js has a matching IILP codec under `runtime/javascript/`.
 
 Run:
 
@@ -37,4 +37,4 @@ python3 runtime/python/iilp.py --self-test
 
 ## Status
 
-Early draft / experimental. The DataCore SQLite adapter is a local reference implementation; remote adapters, replication and production security operations remain unimplemented. IILP is not an Internet standard and is not yet suitable for production or sensitive data.
+Early draft / experimental. The DataCore SQLite adapter is a local reference implementation; remote adapters and replication remain unimplemented. The Bridge gateway requires a TLS-terminating reverse proxy and authentication/authorization controls before network exposure. Production security operations remain incomplete. IILP is not an Internet standard and is not yet suitable for production or sensitive data.
