@@ -48,14 +48,11 @@ export class IILPBrowserClient {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
-      const url = new URL(`${this.baseUrl.href}/v1/services/${encodeURIComponent(service)}/messages`);
+      const base = this.baseUrl.href.replace(/\/$/, "");
+      const url = new URL(`${base}/v1/services/${encodeURIComponent(service)}/messages`);
       const response = await this.fetchImpl(url, {
-        method: "POST",
-        mode: "cors",
-        credentials: "omit",
-        cache: "no-store",
-        redirect: "error",
-        signal: controller.signal,
+        method: "POST", mode: "cors", credentials: "omit", cache: "no-store",
+        redirect: "error", signal: controller.signal,
         headers: { "Accept": "application/json", "Content-Type": "application/json",
                    "X-Request-ID": id },
         body: payload
