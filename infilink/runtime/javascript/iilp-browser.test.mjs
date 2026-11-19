@@ -39,10 +39,30 @@ test("browser client posts JSON to the Bridge and validates response id", async 
   });
   const response = await client.send("orders", "order.create", { item: "book" });
   assert.deepEqual(response, { ok: true, result: { accepted: true } });
-  assert.match(captured.url, /\/v1\/services\/orders\/messages$/);
+  assert.equal(captured.url, "https://api.example.test/v1/services/orders/messages");
   assert.equal(captured.options.credentials, "omit");
   assert.equal(captured.options.redirect, "error");
   assert.equal(captured.options.headers["X-Request-ID"], "browser-request-123");
+});
+
+test("browser client respects a configured API path prefix", async () => {
+  let requestedUrl;
+  const client = new IILPBrowserClient({
+    baseUrl: "https://api.example.test/edge/",
+    cryptoProvider,
+    fetchImpl: async url => {
+      requestedUrl = String(url);
+      return {
+        ok: true, status: 200,
+        headers: { get: () => "application/json" },
+        text: async () => JSON.stringify({
+          type: "response", id: "browser-request-123", body: { ok: true }
+        })
+      };
+    }
+  });
+  await client.send("catalog", "catalog.list", {});
+  assert.equal(requestedUrl, "https://api.example.test/edge/v1/services/catalog/messages");
 });
 
 test("browser client rejects a mismatched response id", async () => {
