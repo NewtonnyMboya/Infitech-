@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 from core import MessageRouter, ServiceRegistry
 from iilp import decode_frame, encode
-from websocket_server import IILPWebSocketServer, WebSocketTransportError
+from websocket_server import IILPWebSocketServer, WebSocketTransportError, MAX_FRAME_BYTES
 
 
 class FakeWebSocket:
@@ -72,6 +72,52 @@ class WebSocketServerTests(unittest.IsolatedAsyncioTestCase):
         ws = FakeWebSocket("https://attacker.example")
         await self.server._handler(ws)
         self.assertEqual(ws.closed[0], 1008)
+
+
+    async def test_missing_principal_is_rejected(self):
+        server = IILPWebSocketServer(
+            self.router,
+            ssl.create_default_context(ssl.Purpose.CLIENT_AUTH),
+            allowed_origins={"https://app.example.test"},
+            authenticate=lambda headers: None,
+            authorize=lambda principal, service, message: True,
+        )
+        with self.assertRaises(WebSocketTransportError):
+            await server._authenticate(FakeWebSocket())
+
+    async def test_async_authentication_callback_is_supported(self):
+        async def authenticate(headers):
+            return {"subject": "async-session"}
+        server = IILPWebSocketServer(
+            self.router,
+            ssl.create_default_context(ssl.Purpose.CLIENT_AUTH),
+            allowed_origins={"https://app.example.test"},
+            authenticate=authenticate,
+            authorize=lambda principal, service, message: True,
+        )
+        principal = await server._authenticate(FakeWebSocket())
+        self.assertEqual(principal["subject"], "async-session")
+
+    async def test_malformed_binary_frame_returns_protocol_error(self):
+        response = decode_frame(await self.server._dispatch_frame(
+            b"not-an-iilp-frame", {"subject": "browser-session"}
+        ))
+        self.assertEqual(response["type"], "error")
+        self.assertFalse(response["body"]["ok"])
+
+    async def test_oversized_frame_is_rejected_before_decode(self):
+        with self.assertRaises(WebSocketTransportError):
+            await self.server._dispatch_frame(
+                b"x" * (MAX_FRAME_BYTES + 1), {"subject": "browser-session"}
+            )
+
+    async def test_missing_service_target_returns_error(self):
+        frame = encode({"type": "echo", "id": "browser-125", "body": {"value": "hello"}})
+        response = decode_frame(await self.server._dispatch_frame(
+            frame, {"subject": "browser-session"}
+        ))
+        self.assertEqual(response["type"], "error")
+        self.assertFalse(response["body"]["ok"])
 
 
 if __name__ == "__main__":
