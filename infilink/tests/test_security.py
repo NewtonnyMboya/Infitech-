@@ -83,6 +83,56 @@ class SecurityTests(unittest.TestCase):
             audit.record("login", "service-a", "success", {"api_key": "do-not-store"})
         self.assertEqual(len(audit.events()), 1)
 
+    def test_websocket_session_issue_and_authenticate(self):
+        clock = Clock()
+        store = WebSocketSessionStore(clock=clock)
+        principal = Principal("key-12345", "alice", frozenset({"ws.echo"}),
+                              clock.value + 120)
+        token, expires = store.issue(principal, ttl_seconds=60)
+        self.assertEqual(expires, clock.value + 60)
+        headers = {"Cookie": f"{store.COOKIE_NAME}={token}"}
+        self.assertEqual(store.authenticate(headers), principal)
+        self.assertIsNone(store.authenticate({"Cookie": "other=value"}))
+
+    def test_websocket_session_expiry_and_revocation(self):
+        clock = Clock()
+        store = WebSocketSessionStore(clock=clock)
+        principal = Principal("key-12345", "alice", frozenset({"ws.echo"}),
+                              clock.value + 120)
+        token, _ = store.issue(principal, ttl_seconds=60)
+        headers = {"Cookie": f"{store.COOKIE_NAME}={token}"}
+        self.assertTrue(store.revoke(token))
+        self.assertIsNone(store.authenticate(headers))
+        self.assertFalse(store.revoke(token))
+        token2, _ = store.issue(principal, ttl_seconds=10)
+        clock.value += 10
+        self.assertIsNone(store.authenticate(
+            {"Cookie": f"{store.COOKIE_NAME}={token2}"}))
+
+    def test_websocket_session_capacity_and_validation(self):
+        clock = Clock()
+        store = WebSocketSessionStore(max_sessions=1, clock=clock)
+        principal = Principal("key-12345", "alice", frozenset({"ws.echo"}),
+                              clock.value + 120)
+        store.issue(principal)
+        with self.assertRaises(SecurityError):
+            store.issue(principal)
+        with self.assertRaises(ValueError):
+            store.issue(principal, ttl_seconds=0)
+        with self.assertRaises(ValueError):
+            store.issue("not-a-principal")
+
+    def test_websocket_session_caps_ttl_at_principal_expiry(self):
+        clock = Clock()
+        store = WebSocketSessionStore(clock=clock)
+        principal = Principal("key-12345", "alice", frozenset({"ws.echo"}),
+                              clock.value + 5)
+        token, expires = store.issue(principal, ttl_seconds=3600)
+        self.assertEqual(expires, principal.expires_at)
+        clock.value += 5
+        self.assertIsNone(store.authenticate(
+            {"Cookie": f"{store.COOKIE_NAME}={token}"}))
+
     def test_audit_capacity(self):
         audit = MemoryAuditSink(capacity=1)
         audit.record("one", "subject", "ok")
