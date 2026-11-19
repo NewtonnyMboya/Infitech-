@@ -46,6 +46,7 @@ class KeycloakOIDCTests(unittest.TestCase):
     def test_valid_token_maps_to_principal(self):
         claims = {
             "sub": "user-123", "exp": 2_000_000_000,
+            "azp": "infilink-web",
             "realm_access": {"roles": ["infilink-user"]},
         }
         fake_jwt = types.SimpleNamespace(
