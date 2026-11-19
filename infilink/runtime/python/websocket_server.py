@@ -117,6 +117,12 @@ class IILPWebSocketServer:
                 "id": request_id,
                 "body": {"ok": False, "error": type(exc).__name__},
             }
+        except Exception:
+            response = {
+                "type": "error",
+                "id": request_id,
+                "body": {"ok": False, "error": "InternalError"},
+            }
         return encode(response)
 
     async def _handler(self, websocket: Any) -> None:
