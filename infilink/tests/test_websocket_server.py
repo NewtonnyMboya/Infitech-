@@ -53,6 +53,7 @@ class WebSocketServerTests(unittest.IsolatedAsyncioTestCase):
         }})
         response = decode_frame(await self.server._dispatch_frame(frame, {"subject": "other"}))
         self.assertEqual(response["type"], "error")
+        self.assertEqual(response["id"], "browser-124")
         self.assertEqual(response["body"]["error"], "WebSocketTransportError")
 
     async def test_text_frames_are_rejected(self):
