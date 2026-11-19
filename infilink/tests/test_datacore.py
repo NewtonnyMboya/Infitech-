@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from runtime.python.datacore import DataCore, DataCoreError, SchemaError, SQLiteAdapter
+from datacore import DataCore, DataCoreError, SchemaError, SQLiteAdapter
 
 SCHEMA = {"fields": {"name": "string", "age": "integer"},
           "required": ["name"], "indexes": ["name"]}
