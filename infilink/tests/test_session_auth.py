@@ -11,6 +11,8 @@ from postgres_sessions import PostgreSQLSessionStore
 from security import Principal
 from session_auth import (
     SessionHTTPMiddleware,
+    issue_session_cookie,
+    revoke_session_from_headers,
     session_clear_cookie,
     session_set_cookie,
     websocket_scope_authorizer,
@@ -54,6 +56,21 @@ class SessionIntegrationTests(unittest.TestCase):
         self.assertIn("Path=/", header)
         self.assertNotIn("Domain=", header)
         self.assertIn("Max-Age=3600", header)
+
+    def test_issue_session_cookie_persists_and_returns_set_cookie(self):
+        self.store.issue = lambda principal, ttl_seconds: ("A" * 43, 3_000_000_000)
+        header, expires_at = issue_session_cookie(self.store, self.principal, 1800)
+        self.assertIn("HttpOnly", header)
+        self.assertIn("Secure", header)
+        self.assertEqual(expires_at, 3_000_000_000)
+
+    def test_revoke_session_uses_cookie_token(self):
+        revoked = []
+        self.store.revoke = lambda token: revoked.append(token) or True
+        self.assertTrue(revoke_session_from_headers(
+            self.store, {"Cookie": "__Host-infilink_session=" + "A" * 43}
+        ))
+        self.assertEqual(revoked, ["A" * 43])
 
     def test_logout_cookie_clears_same_cookie_scope(self):
         header = session_clear_cookie()
