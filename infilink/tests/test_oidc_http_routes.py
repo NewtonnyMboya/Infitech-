@@ -10,6 +10,7 @@ from postgres_oidc_transactions import PostgreSQLLoginTransactionStore
 from postgres_sessions import PostgreSQLSessionStore
 from security import Principal
 from oidc_http_routes import KeycloakOIDCHTTPRoutes
+from bridge import create_authenticated_wsgi_app
 
 
 class OIDCHTTPRouteTests(unittest.TestCase):
@@ -143,6 +144,47 @@ class OIDCHTTPRouteTests(unittest.TestCase):
                 success_redirect="https://evil.example/",
                 post_logout_redirect_uri="https://app.example.test/signed-out",
             )
+
+
+    def test_authenticated_gateway_mounts_routes_and_protects_service_dispatch(self):
+        app = create_authenticated_wsgi_app(
+            None,
+            flow=self.flow,
+            sessions=self.sessions,
+            transactions=self.transactions,
+            bindings=self.bindings,
+            allowed_origins={"https://app.example.test"},
+            service_scopes={"profile": "profile.read"},
+            success_redirect="https://app.example.test/",
+            post_logout_redirect_uri="https://app.example.test/signed-out",
+        )
+        with patch("oidc_http_routes.begin_browser_bound_login") as begin:
+            begin.return_value = (
+                "https://id.example.test/authorize?state=opaque",
+                "__Host-infilink_oidc_browser=opaque; Secure; HttpOnly; Path=/",
+            )
+            captured = {}
+            def start(status, headers):
+                captured["status"] = status
+                captured["headers"] = headers
+            app({"REQUEST_METHOD": "GET", "PATH_INFO": "/auth/login",
+                 "QUERY_STRING": "", "HTTP_COOKIE": ""}, start)
+            self.assertEqual(captured["status"], "303 See Other")
+
+        with patch.object(self.sessions, "authenticate", return_value=None):
+            captured = {}
+            def start_protected(status, headers):
+                captured["status"] = status
+            body = b"".join(app({
+                "REQUEST_METHOD": "POST",
+                "PATH_INFO": "/v1/services/profile/messages",
+                "HTTP_ORIGIN": "https://app.example.test",
+                "HTTP_SEC_FETCH_SITE": "same-origin",
+                "HTTP_COOKIE": "",
+            }, start_protected))
+            self.assertEqual(captured["status"], "401 Unauthorized")
+            self.assertIn(b"authentication_required", body)
+
 
 
 if __name__ == "__main__":
