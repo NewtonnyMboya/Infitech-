@@ -39,7 +39,8 @@ class PostgreSQLLoginTransactionStore:
                 or not 43 <= len(transaction.code_verifier) <= 128
                 or isinstance(transaction.expires_at, bool)
                 or not isinstance(transaction.expires_at, (int, float))
-                or not math.isfinite(transaction.expires_at)):
+                or not math.isfinite(transaction.expires_at)
+                or float(transaction.expires_at) <= __import__("time").time()):
             raise ValueError("invalid OIDC transaction")
         digest = hashlib.sha256(state.encode("ascii")).digest()
         with self._connect() as conn:
