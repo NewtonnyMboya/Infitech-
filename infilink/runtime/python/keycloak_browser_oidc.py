@@ -136,6 +136,24 @@ class KeycloakAuthorizationCodeFlow:
                             ("redirect_uri", redirect_uri)):
             if not isinstance(value, str) or not value.startswith("https://"):
                 raise ValueError(f"{name} must be an HTTPS URL")
+            parsed = urlsplit(value)
+            if (not parsed.hostname or parsed.username or parsed.password or
+                parsed.fragment):
+                raise ValueError(f"{name} is not a valid HTTPS URL")
+        issuer_url = urlsplit(issuer)
+        auth_url = urlsplit(authorization_endpoint)
+        token_url = urlsplit(token_endpoint)
+        expected_path = issuer_url.path.rstrip("/") + "/protocol/openid-connect/"
+        if (issuer_url.query or issuer_url.fragment or
+            (auth_url.scheme, auth_url.netloc) != (issuer_url.scheme, issuer_url.netloc) or
+            (token_url.scheme, token_url.netloc) != (issuer_url.scheme, issuer_url.netloc) or
+            auth_url.path != expected_path + "auth" or
+            token_url.path != expected_path + "token" or
+            auth_url.query or token_url.query):
+            raise ValueError("Keycloak endpoints must match the configured issuer realm")
+        redirect_url = urlsplit(redirect_uri)
+        if redirect_url.query:
+            raise ValueError("redirect_uri must not contain a query string")
         if not isinstance(client_id, str) or not client_id or len(client_id) > 256:
             raise ValueError("client_id must contain 1..256 characters")
         if not 60 <= transaction_ttl <= 900 or not 0 < timeout <= 30:
