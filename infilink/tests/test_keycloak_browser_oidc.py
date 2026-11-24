@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import sys
 import types
 import unittest
@@ -73,9 +75,10 @@ class BrowserOIDCTests(unittest.TestCase):
         self.assertEqual(result.access_token, "access-token")
         sent = self.exchange_calls[0][1]
         self.assertEqual(sent["code"], "auth-code")
-        self.assertEqual(sent["code_verifier"], self.flow.transactions._records[
-            next(iter(self.flow.transactions._records))
-        ].code_verifier if False else sent["code_verifier"])
+        expected = base64.urlsafe_b64encode(
+            hashlib.sha256(sent["code_verifier"].encode("ascii")).digest()
+        ).rstrip(b"=").decode("ascii")
+        self.assertEqual(params["code_challenge"][0], expected)
         self.assertNotIn("client_secret", sent)
 
     def test_callback_state_is_one_time_and_nonce_is_enforced(self):
