@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import math
 import re
+import time
 from typing import Any
 
 from keycloak_browser_oidc import LoginTransaction
@@ -40,7 +41,7 @@ class PostgreSQLLoginTransactionStore:
                 or isinstance(transaction.expires_at, bool)
                 or not isinstance(transaction.expires_at, (int, float))
                 or not math.isfinite(transaction.expires_at)
-                or float(transaction.expires_at) <= __import__("time").time()):
+                or float(transaction.expires_at) <= time.time()):
             raise ValueError("invalid OIDC transaction")
         digest = hashlib.sha256(state.encode("ascii")).digest()
         with self._connect() as conn:
