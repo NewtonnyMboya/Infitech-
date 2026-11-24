@@ -36,6 +36,37 @@ def session_set_cookie(token: str, expires_at: float, *, max_age: int) -> str:
     return morsel.OutputString()
 
 
+def issue_session_cookie(
+    sessions: PostgreSQLSessionStore, principal: Principal, ttl_seconds: int = 3600
+) -> tuple[str, float]:
+    """Persist an already-authenticated principal and return its Set-Cookie value."""
+    if not isinstance(sessions, PostgreSQLSessionStore):
+        raise ValueError("PostgreSQLSessionStore is required")
+    token, expires_at = sessions.issue(principal, ttl_seconds)
+    max_age = max(1, min(ttl_seconds, int(expires_at - __import__("time").time())))
+    return session_set_cookie(token, expires_at, max_age=max_age), expires_at
+
+
+def revoke_session_from_headers(
+    sessions: PostgreSQLSessionStore, headers: Any
+) -> bool:
+    """Revoke the current browser session using its Cookie header."""
+    if not isinstance(sessions, PostgreSQLSessionStore) or headers is None:
+        return False
+    cookie_header = headers.get("Cookie")
+    if not isinstance(cookie_header, str) or not cookie_header or len(cookie_header) > 8192:
+        return False
+    cookies = SimpleCookie()
+    try:
+        cookies.load(cookie_header)
+    except (TypeError, ValueError):
+        return False
+    morsel = cookies.get(COOKIE_NAME)
+    if morsel is None or not PostgreSQLSessionStore._TOKEN.fullmatch(morsel.value):
+        return False
+    return sessions.revoke(morsel.value)
+
+
 def session_clear_cookie() -> str:
     """Expire the session cookie using the same host-only attributes."""
     cookie = SimpleCookie()
