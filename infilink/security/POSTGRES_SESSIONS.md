@@ -1,0 +1,100 @@
+# INFILINK session storage
+
+## PostgreSQL-backed sessions
+
+The optional `runtime/python/postgres_sessions.py` adapter provides shared
+browser/WebSocket sessions for multiple INFILINK workers. It implements the
+same `issue(principal, ttl_seconds)`, `authenticate(headers)`, and
+`revoke(token)` operations as the in-memory `WebSocketSessionStore`.
+
+### Provisioning
+
+1. Provision a PostgreSQL database owned by the INFILINK application. Do not
+   reuse or connect to Keycloak's private database.
+2. Apply `infilink/migrations/001_create_infilink_sessions.sql` and
+   `infilink/migrations/002_create_infilink_oidc_transactions.sql`, and
+   `infilink/migrations/003_create_infilink_oidc_browser_bindings.sql` using a
+   migration/DDL role.
+3. Install the optional driver with
+   `pip install -r infilink/requirements-postgres.txt`.
+4. Give the runtime database role least-privilege access by table:
+   - `SELECT, INSERT, UPDATE` on `infilink_sessions` for session issuance,
+     authentication, and revocation.
+   - `INSERT, DELETE` on `infilink_oidc_transactions` for one-time OIDC state
+     creation and atomic consumption.
+   - `INSERT, DELETE` on `infilink_oidc_browser_bindings` for browser-bound
+     callback verification and atomic consumption. Add `SELECT` only if operational
+     inspection is explicitly required; never expose nonce or PKCE values.
+   - Grant schema `USAGE` as required by the database layout.
+   Keep credentials in the deployment secret manager and require TLS for
+   remote database connections.
+5. Construct the session adapter with a psycopg connection factory, for example:
+
+```python
+import os
+import psycopg
+from postgres_sessions import PostgreSQLSessionStore
+
+sessions = PostgreSQLSessionStore(
+    lambda: psycopg.connect(os.environ["INFILINK_DATABASE_URL"], sslmode="verify-full")
+)
+```
+
+Use `session_auth.py` to integrate the store. After validating the Keycloak
+OIDC login result, call `issue_session_cookie(sessions, principal)` and add
+the returned value as a `Set-Cookie` response header. It persists the session
+before returning a cookie and does not expose the raw token to the caller.
+Wrap the WSGI bridge with `SessionHTTPMiddleware`, configuring exact HTTPS
+origins and an explicit service-to-scope map. For WebSockets, pass
+`websocket_session_authenticator(sessions)` and
+`websocket_scope_authorizer(service_scopes)` to `IILPWebSocketServer`.
+On logout, call `revoke_session_from_headers(sessions, headers)` before
+returning `session_clear_cookie()` as the `Set-Cookie` response header.
+
+For browser login, construct `KeycloakAuthorizationCodeFlow` with
+`PostgreSQLLoginTransactionStore(connect)` as its `transactions` argument.
+The store persists only a SHA-256 digest of `state` and atomically consumes
+state across workers, while retaining the nonce and PKCE verifier server-side.
+For browser binding, use `begin_browser_bound_login(flow, bindings)` to obtain
+an authorization URL and a short-lived `Set-Cookie` value. On callback, pass
+the cookie header to `complete_browser_bound_login(flow, bindings, code=...,
+state=..., cookie_header=...)` before issuing the INFILINK session cookie.
+This verifies that the callback returns to the browser that initiated login.
+The `__Host-infilink_oidc_browser` cookie uses SameSite=Lax because Keycloak
+returns through a top-level GET navigation. Apply migrations 002 and 003 before
+enabling these stores.
+Never return the token in JSON, URLs, or browser-readable storage. These are
+integration helpers; the application still owns its OIDC routes, HTTPS
+termination, and response construction.
+
+### Guarantees and boundaries
+
+- Only SHA-256 token digests are persisted; raw cookie tokens are returned once
+  to the caller and are not stored.
+- PostgreSQL transactions make inserts and revocation atomic.
+- Authentication and revocation use the database clock, so workers share
+  expiry and revocation state.
+- OIDC state and browser-binding consumption use atomic PostgreSQL
+  `DELETE ... RETURNING`, enforcing single use across workers. State and
+  browser-cookie digests, not raw values, are stored. The short-lived
+  `__Host-infilink_oidc_browser` cookie is Secure, HttpOnly, host-only, and
+  SameSite=Lax so it returns on the top-level GET callback from Keycloak.
+- Revocation updates the row; expired/revoked rows are never authenticated.
+  Schedule cleanup of expired rows in session, OIDC transaction, and browser
+  binding tables
+  as operational maintenance. The runtime role may need `DELETE` on the
+  OIDC transaction and browser-binding tables for atomic consumption.
+- The integration helpers provide cookie construction, session issue/revoke
+  operations, WSGI session/scope enforcement, origin and Fetch Metadata checks,
+  and WebSocket authentication/authorization callbacks.
+- The helpers do not implement HTTP login/callback/logout routes, actual
+  response routing, connection pooling, or Keycloak token refresh. The app
+  must invoke them from its OIDC callback and logout handlers.
+- Apply migrations before deploying the adapter. The optional PostgreSQL
+  integration tests require a disposable test database and
+  `INFILINK_TEST_DATABASE_URL`; they are skipped otherwise.
+
+Run Python tests with `infilink/tests/run_tests.sh`. For integration coverage,
+install the optional driver, apply the migration to a disposable database, set
+`INFILINK_TEST_DATABASE_URL`, and run
+`python -m unittest discover -s infilink/tests -p 'test_postgres_*.py' -v`.
