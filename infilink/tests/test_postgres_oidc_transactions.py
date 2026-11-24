@@ -41,7 +41,12 @@ class PostgreSQLOIDCTransactionTests(unittest.TestCase):
         expected = LoginTransaction(secrets.token_urlsafe(32),
                                     secrets.token_urlsafe(64), time.time() + 300)
         self.worker_a.put(state, expected)
-        self.assertEqual(self.worker_b.consume(state), expected)
+        actual = self.worker_b.consume(state)
+        self.assertEqual(actual.nonce, expected.nonce)
+        self.assertEqual(actual.code_verifier, expected.code_verifier)
+        # PostgreSQL TIMESTAMPTZ stores microsecond precision; compare expiry
+        # with a tolerance rather than requiring Python float bit equality.
+        self.assertAlmostEqual(actual.expires_at, expected.expires_at, places=5)
 
     def test_state_can_only_be_consumed_once_across_workers(self):
         from keycloak_browser_oidc import LoginTransaction, OIDCFlowError
