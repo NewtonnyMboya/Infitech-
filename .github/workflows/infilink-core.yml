@@ -1,7 +1,7 @@
 name: INFILINK Core, Runtime and Browser
 on:
   push:
-    branches: [main, "feat/infilink-iilp-foundation"]
+    branches: [main, "feat/infilink-iilp-foundation", "fix/infilink-windows-ci-pythonpath"]
     paths: ["infilink/**", ".github/workflows/infilink-core.yml"]
   pull_request:
     paths: ["infilink/**", ".github/workflows/infilink-core.yml"]
@@ -28,7 +28,7 @@ jobs:
       - name: Run Python protocol, Core, Runtime, DataCore, Bridge, Cloud, Security and WebSocket tests
         shell: bash
         run: |
-          export PYTHONPATH="$GITHUB_WORKSPACE/infilink/runtime/python:$GITHUB_WORKSPACE/infilink/tests"
+          export PYTHONPATH="$(python -c 'import os; print(os.pathsep.join([os.path.join(os.environ["GITHUB_WORKSPACE"], "infilink", "runtime", "python"), os.path.join(os.environ["GITHUB_WORKSPACE"], "infilink", "tests")]))')"
           python infilink/runtime/python/iilp.py --self-test
           python -m unittest discover -s infilink/tests -p 'test_*.py' -v
 
