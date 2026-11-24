@@ -30,12 +30,19 @@ sessions = PostgreSQLSessionStore(
 )
 ```
 
-Use the store's `authenticate` callback for the WebSocket server. Issue a
-session only after validating the Keycloak OIDC login result. Set the returned
-opaque token only in a `Secure; HttpOnly; SameSite=Strict; Path=/` cookie
-(the `__Host-` prefix additionally requires HTTPS and no Domain attribute).
-Never return the token in JSON, URLs, or browser-readable storage. On logout,
-revoke the token server-side and clear the cookie using the same attributes.
+Use `session_auth.py` to integrate the store. After validating the Keycloak
+OIDC login result, call `issue_session_cookie(sessions, principal)` and add
+the returned value as a `Set-Cookie` response header. It persists the session
+before returning a cookie and does not expose the raw token to the caller.
+Wrap the WSGI bridge with `SessionHTTPMiddleware`, configuring exact HTTPS
+origins and an explicit service-to-scope map. For WebSockets, pass
+`websocket_session_authenticator(sessions)` and
+`websocket_scope_authorizer(service_scopes)` to `IILPWebSocketServer`.
+On logout, call `revoke_session_from_headers(sessions, headers)` before
+returning `session_clear_cookie()` as the `Set-Cookie` response header.
+Never return the token in JSON, URLs, or browser-readable storage. These are
+integration helpers; the application still owns its OIDC routes, HTTPS
+termination, and response construction.
 
 ### Guarantees and boundaries
 
@@ -46,9 +53,12 @@ revoke the token server-side and clear the cookie using the same attributes.
   expiry and revocation state.
 - Revocation updates the row; expired/revoked rows are never authenticated.
   Schedule cleanup of expired rows as operational maintenance.
-- The adapter does not implement HTTP login/callback/logout routes, cookie
-  response headers, CSRF protection, connection pooling, or Keycloak token
-  refresh. Those remain application integration work.
+- The integration helpers provide cookie construction, session issue/revoke
+  operations, WSGI session/scope enforcement, origin and Fetch Metadata checks,
+  and WebSocket authentication/authorization callbacks.
+- The helpers do not implement HTTP login/callback/logout routes, actual
+  response routing, connection pooling, or Keycloak token refresh. The app
+  must invoke them from its OIDC callback and logout handlers.
 - Apply migrations before deploying the adapter. The optional PostgreSQL
   integration tests require a disposable test database and
   `INFILINK_TEST_DATABASE_URL`; they are skipped otherwise.
