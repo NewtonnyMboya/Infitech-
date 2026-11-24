@@ -11,14 +11,15 @@ same `issue(principal, ttl_seconds)`, `authenticate(headers)`, and
 
 1. Provision a PostgreSQL database owned by the INFILINK application. Do not
    reuse or connect to Keycloak's private database.
-2. Apply `infilink/migrations/001_create_infilink_sessions.sql` using a
+2. Apply `infilink/migrations/001_create_infilink_sessions.sql` and
+   `infilink/migrations/002_create_infilink_oidc_transactions.sql` using a
    migration/DDL role.
 3. Install the optional driver with
    `pip install -r infilink/requirements-postgres.txt`.
 4. Give the runtime database role only the required table permissions:
    `SELECT, INSERT, UPDATE` on `infilink_sessions`. Keep credentials in the
    deployment secret manager and require TLS for remote database connections.
-5. Construct the adapter with a psycopg connection factory, for example:
+5. Construct the session adapter with a psycopg connection factory, for example:
 
 ```python
 import os
@@ -40,6 +41,14 @@ origins and an explicit service-to-scope map. For WebSockets, pass
 `websocket_scope_authorizer(service_scopes)` to `IILPWebSocketServer`.
 On logout, call `revoke_session_from_headers(sessions, headers)` before
 returning `session_clear_cookie()` as the `Set-Cookie` response header.
+
+For browser login, construct `KeycloakAuthorizationCodeFlow` with
+`PostgreSQLLoginTransactionStore(connect)` as its `transactions` argument.
+The store persists only a SHA-256 digest of `state` and atomically consumes
+state across workers, while retaining the nonce and PKCE verifier server-side.
+This prevents a callback on one worker from being replayed or failing merely
+because it lands on a different worker. Apply migration 002 before enabling
+this store.
 Never return the token in JSON, URLs, or browser-readable storage. These are
 integration helpers; the application still owns its OIDC routes, HTTPS
 termination, and response construction.
@@ -51,6 +60,9 @@ termination, and response construction.
 - PostgreSQL transactions make inserts and revocation atomic.
 - Authentication and revocation use the database clock, so workers share
   expiry and revocation state.
+- OIDC state consumption uses an atomic PostgreSQL `DELETE ... RETURNING`,
+  enforcing single use across workers. State digests, not raw state values,
+  are stored.
 - Revocation updates the row; expired/revoked rows are never authenticated.
   Schedule cleanup of expired rows as operational maintenance.
 - The integration helpers provide cookie construction, session issue/revoke
@@ -66,4 +78,4 @@ termination, and response construction.
 Run Python tests with `infilink/tests/run_tests.sh`. For integration coverage,
 install the optional driver, apply the migration to a disposable database, set
 `INFILINK_TEST_DATABASE_URL`, and run
-`python -m unittest discover -s infilink/tests -p 'test_postgres_sessions.py' -v`.
+`python -m unittest discover -s infilink/tests -p 'test_postgres_*.py' -v`.
