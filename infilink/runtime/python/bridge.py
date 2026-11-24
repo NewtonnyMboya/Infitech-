@@ -217,12 +217,15 @@ def create_authenticated_wsgi_app(
     route adapter; all other requests reach session middleware, which protects
     service message routes before dispatching to the bridge.
     """
+    from keycloak_browser_oidc import KeycloakAuthorizationCodeFlow
     from oidc_http_routes import KeycloakOIDCHTTPRoutes
     from postgres_oidc_browser_binding import PostgreSQLBrowserBindingStore
     from postgres_oidc_transactions import PostgreSQLLoginTransactionStore
     from postgres_sessions import PostgreSQLSessionStore
     from session_auth import SessionHTTPMiddleware
 
+    if not isinstance(flow, KeycloakAuthorizationCodeFlow):
+        raise ValueError("KeycloakAuthorizationCodeFlow is required")
     if not isinstance(sessions, PostgreSQLSessionStore):
         raise ValueError("durable PostgreSQL sessions are required")
     if not isinstance(transactions, PostgreSQLLoginTransactionStore):
