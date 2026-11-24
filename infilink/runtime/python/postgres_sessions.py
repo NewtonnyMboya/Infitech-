@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import secrets
 from http.cookies import CookieError, SimpleCookie
@@ -45,7 +46,8 @@ class PostgreSQLSessionStore:
                 or len(principal.key_id) > 128
                 or not isinstance(principal.subject, str) or not principal.subject
                 or len(principal.subject) > 256
-                or not isinstance(principal.expires_at, (int, float))):
+                or not isinstance(principal.expires_at, (int, float))
+                or not math.isfinite(principal.expires_at)):
             raise ValueError("principal fields are invalid")
         if (not principal.scopes or len(principal.scopes) > 64
                 or any(not isinstance(s, str) or not re.fullmatch(
@@ -60,26 +62,23 @@ class PostgreSQLSessionStore:
         token = secrets.token_urlsafe(32)
         digest = self._digest(token)
         scopes = json.dumps(sorted(principal.scopes), separators=(",", ":"))
-        try:
-            with self._connect() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        """
-                        INSERT INTO infilink_sessions
-                            (token_digest, key_id, subject, scopes, expires_at)
-                        VALUES
-                            (%s, %s, %s, %s::jsonb,
-                             LEAST(clock_timestamp() + (%s * interval '1 second'),
-                                   to_timestamp(%s)))
-                        RETURNING EXTRACT(EPOCH FROM expires_at)
-                        """,
-                        (digest, principal.key_id, principal.subject, scopes,
-                         ttl_seconds, float(principal.expires_at)),
-                    )
-                    row = cur.fetchone()
-        except Exception:
-            # Do not return a token unless its durable row was committed.
-            raise
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO infilink_sessions
+                        (token_digest, key_id, subject, scopes, expires_at)
+                    SELECT %s, %s, %s, %s::jsonb,
+                           LEAST(clock_timestamp() + (%s * interval '1 second'),
+                                 to_timestamp(%s))
+                    WHERE to_timestamp(%s) > clock_timestamp()
+                    RETURNING EXTRACT(EPOCH FROM expires_at)
+                    """,
+                    (digest, principal.key_id, principal.subject, scopes,
+                     ttl_seconds, float(principal.expires_at),
+                     float(principal.expires_at)),
+                )
+                row = cur.fetchone()
         if not row or row[0] is None:
             raise SecurityError("session could not be persisted")
         expires_at = float(row[0])
