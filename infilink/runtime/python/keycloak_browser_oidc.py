@@ -219,6 +219,8 @@ class KeycloakAuthorizationCodeFlow:
             "redirect_uri": self.redirect_uri,
             "code_verifier": transaction.code_verifier,
         }, self.timeout)
+        if not isinstance(token_response, dict):
+            raise OIDCFlowError("OIDC token endpoint returned an invalid response")
         access_token = token_response.get("access_token")
         id_token = token_response.get("id_token")
         expires_in = token_response.get("expires_in", 0)
