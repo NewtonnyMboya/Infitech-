@@ -116,7 +116,7 @@ def begin_browser_bound_login(
     states = parse_qs(urlsplit(authorization_url).query).get("state", [])
     if len(states) != 1:
         raise OIDCFlowError("authorization URL did not contain exactly one state")
-    bindings.put(states[0], browser_binding, time.time() + flow.transaction_ttl)
+    bindings.put(states[0], browser_binding, flow.clock() + flow.transaction_ttl)
     return authorization_url, _browser_cookie(browser_binding, flow.transaction_ttl)
 
 
