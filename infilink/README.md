@@ -74,7 +74,11 @@ token, expires_at = sessions.issue(principal, ttl_seconds=1800)
 
 The verifier pins RS256, validates the JWT signature through Keycloak's JWKS, and checks issuer, audience, expiry, issued-at, subject and authorized party (`azp`). Unknown Keycloak roles grant no INFILINK permissions. Keep the JWKS endpoint and issuer on trusted HTTPS origins. Do not accept ID tokens as API access tokens, do not log tokens, and do not place tokens in URLs or browser storage.
 
-This is the token-validation adapter only. The browser Authorization Code + PKCE redirect/callback, state and nonce lifecycle, code exchange, CSRF defenses, logout/revocation propagation, durable shared session backend, and production key/cache operations are not implemented yet. The adapter's unit tests mock the JWT/JWKS boundary; a live Keycloak realm integration test is still required before deployment.
+The browser Authorization Code + PKCE flow is implemented in `runtime/python/keycloak_browser_oidc.py`. Draft integration layers are available in `postgres_oidc_transactions.py`, `postgres_oidc_browser_binding.py`, `postgres_sessions.py`, `session_auth.py`, and `oidc_http_routes.py`. The WSGI gateway can be composed with these durable adapters using `create_authenticated_wsgi_app` from `bridge.py`; it mounts `GET /auth/login`, the configured OIDC callback path, and `POST /auth/logout`, and protects service message routes with explicit session scopes and exact HTTPS Origin checks.
+
+The factory requires a shared PostgreSQL session store, OIDC transaction store, and browser-binding store. Configure the Keycloak issuer, authorization/token endpoints, client ID, callback URI, allowed browser origins, service-to-scope mapping, and fixed success/logout redirect URIs from trusted deployment configuration. Run migrations 001–003 before starting the application. The callback issues only an opaque Secure, HttpOnly, host-only session cookie; logout revokes the local session before redirecting to Keycloak. Do not expose the unauthenticated `create_wsgi_app` factory to untrusted networks.
+
+This integration is still under review: CI, live PostgreSQL multi-worker tests, and an end-to-end browser test against the real Keycloak realm—including logout, browser-back behavior, and revoked-session reuse—must pass before production use. JWT/JWKS unit tests mock the cryptographic provider boundary; they do not replace live identity-provider verification.
 
 ### Browser WebSocket session authentication
 
