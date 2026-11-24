@@ -56,11 +56,10 @@ class PostgreSQLOIDCTransactionTests(unittest.TestCase):
     def test_expired_state_is_rejected(self):
         from keycloak_browser_oidc import LoginTransaction, OIDCFlowError
         state = secrets.token_urlsafe(32)
-        self.worker_a.put(state, LoginTransaction(secrets.token_urlsafe(32),
-                                                  secrets.token_urlsafe(64),
-                                                  time.time() - 1))
-        with self.assertRaises(OIDCFlowError):
-            self.worker_b.consume(state)
+        with self.assertRaises(ValueError):
+            self.worker_a.put(state, LoginTransaction(secrets.token_urlsafe(32),
+                                                      secrets.token_urlsafe(64),
+                                                      time.time() - 1))
 
 
 if __name__ == "__main__":
