@@ -6,6 +6,7 @@ production deployments must inject a durable, shared, atomic one-time store.
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import secrets
 import threading
@@ -167,7 +168,7 @@ class KeycloakAuthorizationCodeFlow:
         state = secrets.token_urlsafe(32)
         nonce = secrets.token_urlsafe(32)
         code_verifier = secrets.token_urlsafe(64)
-        challenge = secrets.base64.urlsafe_b64encode(
+        challenge = base64.urlsafe_b64encode(
             hashlib.sha256(code_verifier.encode("ascii")).digest()
         ).rstrip(b"=").decode("ascii")
         self.transactions.put(
