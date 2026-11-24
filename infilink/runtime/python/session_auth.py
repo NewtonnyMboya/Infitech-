@@ -5,7 +5,7 @@ never accepts identity or scope claims supplied by the browser.
 """
 from __future__ import annotations
 
-from http.cookies import SimpleCookie
+from http.cookies import CookieError, SimpleCookie
 from typing import Any, Callable
 from email.utils import formatdate
 from urllib.parse import urlsplit
@@ -60,7 +60,7 @@ def revoke_session_from_headers(
     cookies = SimpleCookie()
     try:
         cookies.load(cookie_header)
-    except (TypeError, ValueError):
+    except (CookieError, TypeError, ValueError):
         return False
     morsel = cookies.get(COOKIE_NAME)
     if morsel is None or not PostgreSQLSessionStore._TOKEN.fullmatch(morsel.value):
