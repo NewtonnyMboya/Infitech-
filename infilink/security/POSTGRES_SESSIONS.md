@@ -55,8 +55,14 @@ For browser login, construct `KeycloakAuthorizationCodeFlow` with
 `PostgreSQLLoginTransactionStore(connect)` as its `transactions` argument.
 The store persists only a SHA-256 digest of `state` and atomically consumes
 state across workers, while retaining the nonce and PKCE verifier server-side.
-This prevents a callback on one worker from being replayed or failing merely
-because it lands on a different worker. Apply migrations 002 and 003 before enabling these stores.
+For browser binding, use `begin_browser_bound_login(flow, bindings)` to obtain
+an authorization URL and a short-lived `Set-Cookie` value. On callback, pass
+the cookie header to `complete_browser_bound_login(flow, bindings, code=...,
+state=..., cookie_header=...)` before issuing the INFILINK session cookie.
+This verifies that the callback returns to the browser that initiated login.
+The `__Host-infilink_oidc_browser` cookie uses SameSite=Lax because Keycloak
+returns through a top-level GET navigation. Apply migrations 002 and 003 before
+enabling these stores.
 Never return the token in JSON, URLs, or browser-readable storage. These are
 integration helpers; the application still owns its OIDC routes, HTTPS
 termination, and response construction.
@@ -77,7 +83,7 @@ termination, and response construction.
   Schedule cleanup of expired rows in session, OIDC transaction, and browser
   binding tables
   as operational maintenance. The runtime role may need `DELETE` on the
-  OIDC transaction table for atomic consumption.
+  OIDC transaction and browser-binding tables for atomic consumption.
 - The integration helpers provide cookie construction, session issue/revoke
   operations, WSGI session/scope enforcement, origin and Fetch Metadata checks,
   and WebSocket authentication/authorization callbacks.
