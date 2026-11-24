@@ -99,6 +99,46 @@ class KeycloakOIDCVerifier:
         except Exception as exc:
             raise SecurityError("identity token validation failed") from exc
 
+    def verify_id_token(self, token: str, *, nonce: str) -> Principal:
+        """Validate an OIDC ID token for this client and bind it to login nonce."""
+        import hmac
+        if (not isinstance(token, str) or not token or len(token) > 16_384 or
+            not isinstance(nonce, str) or not nonce or len(nonce) > 256):
+            raise SecurityError("invalid ID token or nonce")
+        try:
+            signing_key = self._jwks.get_signing_key_from_jwt(token).key
+            claims = self._jwt.decode(
+                token,
+                signing_key,
+                algorithms=list(self.config.algorithms),
+                issuer=self.config.issuer,
+                audience=self.config.client_id,
+                options={"require": ["exp", "iat", "sub", "iss", "aud", "nonce"],
+                         "verify_signature": True, "verify_exp": True,
+                         "verify_iss": True, "verify_aud": True},
+            )
+            if not isinstance(claims, dict):
+                raise ValueError("JWT claims must be an object")
+            if claims.get("azp") != self.config.client_id:
+                raise ValueError("unexpected authorized party")
+            if not hmac.compare_digest(str(claims.get("nonce", "")), nonce):
+                raise ValueError("OIDC nonce mismatch")
+            subject = claims.get("sub")
+            expires = claims.get("exp")
+            if not isinstance(subject, str) or not subject or len(subject) > 255:
+                raise ValueError("invalid subject")
+            if isinstance(expires, bool) or not isinstance(expires, (int, float)):
+                raise ValueError("invalid expiry")
+            scopes = self._map_scopes(claims)
+            if not scopes:
+                raise ValueError("ID token has no mapped INFILINK permissions")
+            key_id = "oidc-" + hashlib.sha256(
+                (self.config.issuer + "|" + subject).encode("utf-8")
+            ).hexdigest()[:24]
+            return Principal(key_id, subject, frozenset(scopes), float(expires))
+        except Exception as exc:
+            raise SecurityError("identity token validation failed") from exc
+
     def _map_scopes(self, claims: dict[str, Any]) -> set[str]:
         roles: set[str] = set()
         realm = claims.get("realm_access", {})
