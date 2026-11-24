@@ -191,5 +191,61 @@ class AllowlistedHTTPSClient:
 
 
 def create_wsgi_app(router: MessageRouter) -> HTTPJSONGateway:
-    """Convenience factory for WSGI servers such as wsgiref or gunicorn."""
+    """Create the unauthenticated development gateway.
+
+    Do not expose this factory to an untrusted network. Production deployments
+    should use create_authenticated_wsgi_app with durable stores.
+    """
     return HTTPJSONGateway(router)
+
+
+def create_authenticated_wsgi_app(
+    router: MessageRouter,
+    *,
+    flow: Any,
+    sessions: Any,
+    transactions: Any,
+    bindings: Any,
+    allowed_origins: set[str],
+    service_scopes: dict[str, str],
+    success_redirect: str,
+    post_logout_redirect_uri: str,
+) -> Callable:
+    """Mount durable OIDC routes and session authorization around the HTTP gateway.
+
+    Middleware order is intentional: OIDC endpoints are handled by the outer
+    route adapter; all other requests reach session middleware, which protects
+    service message routes before dispatching to the bridge.
+    """
+    from oidc_http_routes import KeycloakOIDCHTTPRoutes
+    from postgres_oidc_browser_binding import PostgreSQLBrowserBindingStore
+    from postgres_oidc_transactions import PostgreSQLLoginTransactionStore
+    from postgres_sessions import PostgreSQLSessionStore
+    from session_auth import SessionHTTPMiddleware
+
+    if not isinstance(sessions, PostgreSQLSessionStore):
+        raise ValueError("durable PostgreSQL sessions are required")
+    if not isinstance(transactions, PostgreSQLLoginTransactionStore):
+        raise ValueError("durable PostgreSQL OIDC transactions are required")
+    if not isinstance(bindings, PostgreSQLBrowserBindingStore):
+        raise ValueError("durable PostgreSQL browser bindings are required")
+    if not isinstance(flow.transactions, PostgreSQLLoginTransactionStore):
+        raise ValueError("OIDC flow must use PostgreSQL login transactions")
+
+    gateway = HTTPJSONGateway(router)
+    protected_gateway = SessionHTTPMiddleware(
+        gateway,
+        sessions,
+        allowed_origins=allowed_origins,
+        service_scopes=service_scopes,
+    )
+    return KeycloakOIDCHTTPRoutes(
+        protected_gateway,
+        flow=flow,
+        sessions=sessions,
+        transactions=transactions,
+        bindings=bindings,
+        allowed_origins=allowed_origins,
+        success_redirect=success_redirect,
+        post_logout_redirect_uri=post_logout_redirect_uri,
+    )
