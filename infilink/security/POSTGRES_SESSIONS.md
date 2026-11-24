@@ -16,9 +16,15 @@ same `issue(principal, ttl_seconds)`, `authenticate(headers)`, and
    migration/DDL role.
 3. Install the optional driver with
    `pip install -r infilink/requirements-postgres.txt`.
-4. Give the runtime database role only the required table permissions:
-   `SELECT, INSERT, UPDATE` on `infilink_sessions`. Keep credentials in the
-   deployment secret manager and require TLS for remote database connections.
+4. Give the runtime database role least-privilege access by table:
+   - `SELECT, INSERT, UPDATE` on `infilink_sessions` for session issuance,
+     authentication, and revocation.
+   - `INSERT, DELETE` on `infilink_oidc_transactions` for one-time OIDC state
+     creation and atomic consumption. Add `SELECT` only if operational
+     inspection is explicitly required; never expose nonce or PKCE values.
+   - Grant schema `USAGE` as required by the database layout.
+   Keep credentials in the deployment secret manager and require TLS for
+   remote database connections.
 5. Construct the session adapter with a psycopg connection factory, for example:
 
 ```python
@@ -64,7 +70,9 @@ termination, and response construction.
   enforcing single use across workers. State digests, not raw state values,
   are stored.
 - Revocation updates the row; expired/revoked rows are never authenticated.
-  Schedule cleanup of expired rows as operational maintenance.
+  Schedule cleanup of expired rows in both session and OIDC transaction tables
+  as operational maintenance. The runtime role may need `DELETE` on the
+  OIDC transaction table for atomic consumption.
 - The integration helpers provide cookie construction, session issue/revoke
   operations, WSGI session/scope enforcement, origin and Fetch Metadata checks,
   and WebSocket authentication/authorization callbacks.
