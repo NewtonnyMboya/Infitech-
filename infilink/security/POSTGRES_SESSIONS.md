@@ -12,7 +12,8 @@ same `issue(principal, ttl_seconds)`, `authenticate(headers)`, and
 1. Provision a PostgreSQL database owned by the INFILINK application. Do not
    reuse or connect to Keycloak's private database.
 2. Apply `infilink/migrations/001_create_infilink_sessions.sql` and
-   `infilink/migrations/002_create_infilink_oidc_transactions.sql` using a
+   `infilink/migrations/002_create_infilink_oidc_transactions.sql`, and
+   `infilink/migrations/003_create_infilink_oidc_browser_bindings.sql` using a
    migration/DDL role.
 3. Install the optional driver with
    `pip install -r infilink/requirements-postgres.txt`.
@@ -20,7 +21,9 @@ same `issue(principal, ttl_seconds)`, `authenticate(headers)`, and
    - `SELECT, INSERT, UPDATE` on `infilink_sessions` for session issuance,
      authentication, and revocation.
    - `INSERT, DELETE` on `infilink_oidc_transactions` for one-time OIDC state
-     creation and atomic consumption. Add `SELECT` only if operational
+     creation and atomic consumption.
+   - `INSERT, DELETE` on `infilink_oidc_browser_bindings` for browser-bound
+     callback verification and atomic consumption. Add `SELECT` only if operational
      inspection is explicitly required; never expose nonce or PKCE values.
    - Grant schema `USAGE` as required by the database layout.
    Keep credentials in the deployment secret manager and require TLS for
@@ -53,8 +56,7 @@ For browser login, construct `KeycloakAuthorizationCodeFlow` with
 The store persists only a SHA-256 digest of `state` and atomically consumes
 state across workers, while retaining the nonce and PKCE verifier server-side.
 This prevents a callback on one worker from being replayed or failing merely
-because it lands on a different worker. Apply migration 002 before enabling
-this store.
+because it lands on a different worker. Apply migrations 002 and 003 before enabling these stores.
 Never return the token in JSON, URLs, or browser-readable storage. These are
 integration helpers; the application still owns its OIDC routes, HTTPS
 termination, and response construction.
@@ -66,11 +68,14 @@ termination, and response construction.
 - PostgreSQL transactions make inserts and revocation atomic.
 - Authentication and revocation use the database clock, so workers share
   expiry and revocation state.
-- OIDC state consumption uses an atomic PostgreSQL `DELETE ... RETURNING`,
-  enforcing single use across workers. State digests, not raw state values,
-  are stored.
+- OIDC state and browser-binding consumption use atomic PostgreSQL
+  `DELETE ... RETURNING`, enforcing single use across workers. State and
+  browser-cookie digests, not raw values, are stored. The short-lived
+  `__Host-infilink_oidc_browser` cookie is Secure, HttpOnly, host-only, and
+  SameSite=Lax so it returns on the top-level GET callback from Keycloak.
 - Revocation updates the row; expired/revoked rows are never authenticated.
-  Schedule cleanup of expired rows in both session and OIDC transaction tables
+  Schedule cleanup of expired rows in session, OIDC transaction, and browser
+  binding tables
   as operational maintenance. The runtime role may need `DELETE` on the
   OIDC transaction table for atomic consumption.
 - The integration helpers provide cookie construction, session issue/revoke
