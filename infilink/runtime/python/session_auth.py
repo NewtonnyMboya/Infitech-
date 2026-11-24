@@ -9,6 +9,7 @@ from http.cookies import SimpleCookie
 from typing import Any, Callable
 from email.utils import formatdate
 from urllib.parse import urlsplit
+import time
 
 from security import Principal, SecurityError
 
@@ -43,7 +44,7 @@ def issue_session_cookie(
     if not isinstance(sessions, PostgreSQLSessionStore):
         raise ValueError("PostgreSQLSessionStore is required")
     token, expires_at = sessions.issue(principal, ttl_seconds)
-    max_age = max(1, min(ttl_seconds, int(expires_at - __import__("time").time())))
+    max_age = max(1, min(ttl_seconds, int(expires_at - time.time())))
     return session_set_cookie(token, expires_at, max_age=max_age), expires_at
 
 
