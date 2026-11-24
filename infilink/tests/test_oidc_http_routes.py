@@ -1,3 +1,5 @@
+import sys
+import types
 import unittest
 from unittest.mock import patch
 
@@ -19,7 +21,14 @@ class OIDCHTTPRouteTests(unittest.TestCase):
             jwks_url="https://id.example.test/realms/infilink/protocol/openid-connect/certs",
             role_scope_map={"infilink-user": frozenset({"profile.read"})},
         )
-        verifier = KeycloakOIDCVerifier(config)
+        class FakeJWKS:
+            def __init__(self, *args, **kwargs):
+                pass
+            def get_signing_key_from_jwt(self, token):
+                return types.SimpleNamespace(key="fake-key")
+        fake_jwt = types.SimpleNamespace(PyJWKClient=FakeJWKS)
+        with patch.dict(sys.modules, {"jwt": fake_jwt}):
+            verifier = KeycloakOIDCVerifier(config)
         self.transactions = PostgreSQLLoginTransactionStore(lambda: None)
         self.flow = KeycloakAuthorizationCodeFlow(
             issuer=config.issuer,
