@@ -131,7 +131,7 @@ class KeycloakOIDCHTTPRoutes:
             cookie, _ = issue_session_cookie(
                 self.sessions, result.principal, ttl_seconds=min(result.expires_in, 3600)
             )
-        except (OIDCFlowError, ValueError, RuntimeError):
+        except Exception:
             return self._response(
                 start_response, "401 Unauthorized",
                 b'{"error":"authentication_failed"}',
@@ -151,9 +151,15 @@ class KeycloakOIDCHTTPRoutes:
                 start_response, "403 Forbidden", b'{"error":"csrf_check_failed"}'
             )
         # Local revocation happens before redirecting to Keycloak.
-        revoke_session_from_headers(
-            self.sessions, {"Cookie": environ.get("HTTP_COOKIE", "")}
-        )
+        try:
+            revoke_session_from_headers(
+                self.sessions, {"Cookie": environ.get("HTTP_COOKIE", "")}
+            )
+        except Exception:
+            return self._response(
+                start_response, "503 Service Unavailable",
+                b'{"error":"logout_unavailable"}'
+            )
         location = self.end_session_endpoint + "?" + urlencode({
             "client_id": self.flow.client_id,
             "post_logout_redirect_uri": self.post_logout_redirect_uri,
@@ -174,7 +180,7 @@ class KeycloakOIDCHTTPRoutes:
                 location, browser_cookie = begin_browser_bound_login(
                     self.flow, self.bindings
                 )
-            except (OIDCFlowError, ValueError, RuntimeError):
+            except Exception:
                 return self._response(
                     start_response, "503 Service Unavailable",
                     b'{"error":"login_unavailable"}'
