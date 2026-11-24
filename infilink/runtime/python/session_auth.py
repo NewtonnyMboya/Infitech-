@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from http.cookies import SimpleCookie
 from typing import Any, Callable
+from email.utils import formatdate
+from urllib.parse import urlsplit
 
 from security import Principal, SecurityError
 
@@ -30,9 +32,7 @@ def session_set_cookie(token: str, expires_at: float, *, max_age: int) -> str:
     morsel["httponly"] = True
     morsel["samesite"] = "Strict"
     morsel["max-age"] = str(max_age)
-    morsel["expires"] = __import__("email.utils", fromlist=["formatdate"]).formatdate(
-        expires_at, usegmt=True
-    )
+    morsel["expires"] = formatdate(expires_at, usegmt=True)
     return morsel.OutputString()
 
 
@@ -66,11 +66,14 @@ class SessionHTTPMiddleware:
     ) -> None:
         if not callable(app) or not isinstance(sessions, PostgreSQLSessionStore):
             raise ValueError("app and PostgreSQLSessionStore are required")
-        if not allowed_origins or any(
-            not isinstance(origin, str) or not origin.startswith("https://")
-            or "/" in origin[len("https://"):] for origin in allowed_origins
-        ):
+        if not allowed_origins:
             raise ValueError("exact HTTPS origins are required")
+        for origin in allowed_origins:
+            parsed = urlsplit(origin)
+            if (parsed.scheme != "https" or not parsed.hostname
+                    or parsed.path not in ("", "/") or parsed.query or parsed.fragment
+                    or parsed.username or parsed.password):
+                raise ValueError("exact HTTPS origins are required")
         if not service_scopes or any(
             not isinstance(k, str) or not k or not isinstance(v, str) or not v
             for k, v in service_scopes.items()
