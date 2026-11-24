@@ -67,6 +67,8 @@ class KeycloakOIDCHTTPRoutes:
         self.post_logout_redirect_uri = post_logout_redirect_uri
         self.login_path, self.logout_path = login_path, logout_path
         self.callback_path = urlsplit(flow.redirect_uri).path
+        if not self.callback_path or self.callback_path in (login_path, logout_path):
+            raise ValueError("OIDC callback path must be distinct from login and logout")
         issuer = urlsplit(flow.issuer)
         self.end_session_endpoint = (
             issuer.scheme + "://" + issuer.netloc + issuer.path.rstrip("/")
@@ -131,10 +133,16 @@ class KeycloakOIDCHTTPRoutes:
             cookie, _ = issue_session_cookie(
                 self.sessions, result.principal, ttl_seconds=min(result.expires_in, 3600)
             )
-        except Exception:
+        except (OIDCFlowError, ValueError, RuntimeError):
             return self._response(
                 start_response, "401 Unauthorized",
                 b'{"error":"authentication_failed"}',
+                [("Set-Cookie", clear_browser_cookie())],
+            )
+        except Exception:
+            return self._response(
+                start_response, "503 Service Unavailable",
+                b'{"error":"authentication_unavailable"}',
                 [("Set-Cookie", clear_browser_cookie())],
             )
         return self._redirect(
